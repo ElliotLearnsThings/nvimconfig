@@ -5,6 +5,16 @@ vim.o.termguicolors = true  -- Enable true color support
 -- Fugative config
 
 vim.keymap.set("n", "<leader>gs", ":Git<CR>", { desc = "Open Git status" })
+vim.keymap.set("n", "<leader>gc", ":Git commit -m '", { desc = "Open Git commit" })
+vim.keymap.set("n", "<leader>ga", ":Git add -u<CR>'", { desc = "Open Git add" })
+vim.keymap.set("n", "<leader>gq", ":Git add ", { desc = "Open Git add" })
+vim.keymap.set("n", "<leader>gp", ":Git pull<CR>", { desc = "Open Git pull" })
+vim.keymap.set("n", "<leader>gf", ":Git push<CR>", { desc = "Open Git push" })
+vim.keymap.set("n", "<leader>gd", ":Gdiffsplit<CR>", { desc = "Open Git diff" })
+vim.keymap.set("n", "]g", "<cmd>cnext<CR>", { noremap = true, silent = true })
+vim.keymap.set("n", "[g", "<cmd>cprev<CR>", { noremap = true, silent = true })
+
+-- test
 
 -- Baseic config
 
@@ -25,7 +35,6 @@ vim.keymap.set("n", "<C-s>", function() ui.nav_file(4) end)
 
 
 -- Oil config
-
 vim.keymap.set("n", "-", "<CMD>Oil<CR>", { desc = "Open parent directory" })
 local detail = false
 require("oil").setup({
@@ -238,14 +247,14 @@ vim.g.undotree_WindowLayout = 2
 vim.g.copilot_enabled = 0
 
 vim.keymap.set('n', '<leader>ce', ':Copilot enable<CR>', { desc = 'Enable Copilot' })
-vim.keymap.set('n', '<leader>cd', ':Copilot disable<CR>', { desc = 'Disable Copilot' })
+vim.keymap.set('n', '<leader>cr', ':Copilot disable<CR>', { desc = 'Disable Copilot' })
 
 vim.keymap.set('i', '<leader><leader>', 'copilot#Accept("\\<CR>")', {
   expr = true,
   replace_keycodes = false
 })
 
-vim.keymap.set('n', '<leader>v', 'copilot#Accept("\\<C-p>")', {
+vim.keymap.set('n', '<leader><Tab>', 'copilot#Accept("\\<CR>")', {
   expr = true,
   replace_keycodes = false
 })
@@ -253,7 +262,7 @@ vim.keymap.set('n', '<leader>v', 'copilot#Accept("\\<C-p>")', {
 -- Old config stuff
 vim.g.mapleader = " "
 
--- Grep
+-- Telescope 
 
 vim.keymap.set('n', '<leader>cf', function ()
 	require('telescope.builtin').live_grep()	
