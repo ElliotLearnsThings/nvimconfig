@@ -11,10 +11,12 @@ vim.keymap.set("n", "<leader>gq", ":Git add ", { desc = "Open Git add" })
 vim.keymap.set("n", "<leader>gp", ":Git pull<CR>", { desc = "Open Git pull" })
 vim.keymap.set("n", "<leader>gf", ":Git push<CR>", { desc = "Open Git push" })
 vim.keymap.set("n", "<leader>gd", ":Gdiffsplit<CR>", { desc = "Open Git diff" })
+vim.keymap.set("n", "<leader>gg", ":Git difftool<CR>", { desc = "Open Git diff" })
 vim.keymap.set("n", "]g", "<cmd>cnext<CR>", { noremap = true, silent = true })
 vim.keymap.set("n", "[g", "<cmd>cprev<CR>", { noremap = true, silent = true })
 
--- test
+-- test2
+
 
 -- Baseic config
 
