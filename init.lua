@@ -10,7 +10,7 @@ vim.keymap.set("n", "<leader>ga", ":Git add -u<CR>'", { desc = "Open Git add" })
 vim.keymap.set("n", "<leader>gq", ":Git add ", { desc = "Open Git add" })
 vim.keymap.set("n", "<leader>gp", ":Git pull<CR>", { desc = "Open Git pull" })
 vim.keymap.set("n", "<leader>gf", ":Git push<CR>", { desc = "Open Git push" })
-vim.keymap.set("n", "<leader>gd", ":Gdiffsplit<CR>", { desc = "Open Git diff" })
+vim.keymap.set("n", "<leader>gh", ":Gdiffsplit<CR>", { desc = "Open Git diff" })
 vim.keymap.set("n", "<leader>gg", ":Git difftool<CR>", { desc = "Open Git diff" })
 vim.keymap.set("n", "]g", "<cmd>cnext<CR>", { noremap = true, silent = true })
 vim.keymap.set("n", "[g", "<cmd>cprev<CR>", { noremap = true, silent = true })
@@ -20,7 +20,18 @@ vim.keymap.set("n", "[g", "<cmd>cprev<CR>", { noremap = true, silent = true })
 
 -- Baseic config
 
+vim.keymap.set('n', '<C-h>', '<C-w>h', { noremap = true, silent = true })
+vim.keymap.set('n', '<C-j>', '<C-w>j', { noremap = true, silent = true })
+vim.keymap.set('n', '<C-k>', '<C-w>k', { noremap = true, silent = true })
+vim.keymap.set('n', '<C-l>', '<C-w>l', { noremap = true, silent = true })
+
+-- Window splitting (right and down)
+vim.keymap.set('n', '<leader>wd', '<C-w>s', { noremap = true, silent = true })
+vim.keymap.set('n', '<leader>wf', '<C-w>v', { noremap = true, silent = true })
+
+
 vim.opt.clipboard:append { 'unnamedplus' }
+
 
 -- Harpoon config
 
