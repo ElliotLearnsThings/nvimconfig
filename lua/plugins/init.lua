@@ -1,9 +1,5 @@
 require("lazy").setup({{"nvim-treesitter/nvim-treesitter", build = ":TSUpdate"}})
 
-local group = vim.api.nvim_create_augroup("lsp_format_on_save", { clear = false });
-local event = "BufWritePre"; -- or "BufWritePost"
-local async = event == "BufWritePost";
-
 return {
 	{
 		'brenoprata10/nvim-highlight-colors'
@@ -108,7 +104,6 @@ return {
 				end,
 			})
 			lspconfig.gopls.setup({})
-			lspconfig.prettier.setup({})
 
 		end,
 	},
