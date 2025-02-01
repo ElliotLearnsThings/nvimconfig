@@ -27,8 +27,8 @@ require('lualine').setup {
     lualine_a = {},
     lualine_b = {},
 		lualine_c = {},
-		lualine_x = {'datetime',},
-    lualine_y = {'filename', 'fileformat', 'encoding'},
+		lualine_x = {},
+    lualine_y = {},
     lualine_z = {},
 	},
   inactive_sections = {
@@ -40,12 +40,12 @@ require('lualine').setup {
     lualine_z = {}
   },
   tabline = {
-    lualine_a = {},
-    lualine_b = {},
-    lualine_c = {},
-    lualine_x = {'filetype'},
-    lualine_y = {'branch', 'diff', 'diagnostics'},
-    lualine_z = {'progress','location','mode'}
+    lualine_a = {'filename'},
+    lualine_b = {'filetype', 'fileformat', 'encoding'},
+    lualine_c = {'datetime'},
+    lualine_x = {'progress','location'},
+    lualine_y = {'diagnostics','diff', 'branch'},
+    lualine_z = {'mode'}
 	},
   winbar = {},
   inactive_winbar = {},
