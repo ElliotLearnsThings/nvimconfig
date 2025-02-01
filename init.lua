@@ -1,10 +1,58 @@
 require("config.lazy")
-vim.cmd[[colorscheme tokyonight]]
-vim.o.termguicolors = true  -- Enable true color support
 
+
+-- Lua line
+
+require('lualine').setup {
+  options = {
+    icons_enabled = true,
+    theme = 'auto',
+    component_separators = { left = '', right = ''},
+    section_separators = { left = '', right = ''},
+    disabled_filetypes = {
+      statusline = {},
+      winbar = {},
+    },
+    ignore_focus = {},
+    always_divide_middle = true,
+    always_show_tabline = true,
+    globalstatus = false,
+    refresh = {
+      statusline = 100,
+      tabline = 100,
+      winbar = 100,
+    }
+  },
+  sections = {
+    lualine_a = {},
+    lualine_b = {},
+		lualine_c = {},
+		lualine_x = {'datetime',},
+    lualine_y = {'filename', 'fileformat', 'encoding'},
+    lualine_z = {},
+	},
+  inactive_sections = {
+    lualine_a = {},
+    lualine_b = {},
+    lualine_c = {'filename'},
+    lualine_x = {'location'},
+    lualine_y = {},
+    lualine_z = {}
+  },
+  tabline = {
+    lualine_a = {},
+    lualine_b = {},
+    lualine_c = {},
+    lualine_x = {'filetype'},
+    lualine_y = {'branch', 'diff', 'diagnostics'},
+    lualine_z = {'progress','location','mode'}
+	},
+  winbar = {},
+  inactive_winbar = {},
+  extensions = {}
+}
 
 -- null ls for prettier
-
 local null_ls = require("null-ls")
 
 null_ls.setup({
@@ -50,6 +98,37 @@ null_ls.setup({
 })
 
 -- Colors
+--
+vim.cmd[[colorscheme nightfox]]
+vim.o.termguicolors = true  -- Enable true color support
+
+require("nightfox").setup({
+	options = {
+		colorblind = {
+			enable = true,
+			-- simulate_only = true,
+			severity = {
+				-- protan = 1,
+				-- deutan = 1,
+				-- tritan = 1,
+			}
+		},
+		transparent = true,
+		terminal_colors = true,
+		styles = {               -- Style to be applied to different syntax groups
+			comments = "italic",     -- Value is any valid attr-list value `:help attr-list`
+			conditionals = "italic",
+			constants = "underdotted",
+			functions = "bold",
+			keywords = "italic",
+			numbers = "italic",
+			operators = "italic",
+			strings = "italic",
+			types = "bold",
+			variables = "NONE",
+		},
+	},
+})
 
 require("nvim-highlight-colors").setup {
 	---Render style
@@ -117,9 +196,6 @@ vim.keymap.set("n", "<leader>gh", ":Gdiffsplit<CR>", { desc = "Open Git diff" })
 vim.keymap.set("n", "<leader>gg", ":Git difftool<CR>", { desc = "Open Git diff" })
 vim.keymap.set("n", "]g", "<cmd>cnext<CR>", { noremap = true, silent = true })
 vim.keymap.set("n", "[g", "<cmd>cprev<CR>", { noremap = true, silent = true })
-
--- test2
-
 
 -- Baseic config
 

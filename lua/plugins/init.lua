@@ -2,6 +2,10 @@ require("lazy").setup({{"nvim-treesitter/nvim-treesitter", build = ":TSUpdate"}}
 
 return {
 	{
+		'nvim-lualine/lualine.nvim',
+		dependencies = { 'nvim-tree/nvim-web-devicons' }
+	},
+	{
 		'brenoprata10/nvim-highlight-colors'
 	},
 	{
@@ -17,6 +21,9 @@ return {
 	{
 		"nvim-tree/nvim-web-devicons",
 	},
+	{
+
+	},
 
 	{
 		"williamboman/mason.nvim",
@@ -25,7 +32,9 @@ return {
 			require("mason").setup()
 		end,
 	},
-
+	{
+		"EdenEast/nightfox.nvim"
+	},
 	{
 		"williamboman/mason-lspconfig.nvim",
 		dependencies = { "williamboman/mason.nvim", "neovim/nvim-lspconfig" },
@@ -79,7 +88,7 @@ return {
 			})
 
 			lspconfig.tailwindcss.setup({
-				capabilities = capabilities,
+			 	capabilities = capabilities,
 				filetypes = { "typescript", "typescriptreact", "javascript", "javascriptreact" }, -- Add supported file types
 			})
 
@@ -141,7 +150,7 @@ return {
 	{
 		"folke/tokyonight.nvim",
 		lazy = false,
-		priority = 1000,
+		priority = 0,
 		opts = {},
 	},
 	{
