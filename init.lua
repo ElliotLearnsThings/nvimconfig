@@ -123,10 +123,10 @@ vim.keymap.set("n", "[g", "<cmd>cprev<CR>", { noremap = true, silent = true })
 
 -- Baseic config
 
-vim.keymap.set('n', '<C-h>', '<C-w>h', { noremap = true, silent = true })
+vim.keymap.set('n', '<C-[>', '<C-w>h', { noremap = true, silent = true })
 vim.keymap.set('n', '<C-j>', '<C-w>j', { noremap = true, silent = true })
 vim.keymap.set('n', '<C-k>', '<C-w>k', { noremap = true, silent = true })
-vim.keymap.set('n', '<C-l>', '<C-w>l', { noremap = true, silent = true })
+vim.keymap.set('n', '<C-]>', '<C-w>l', { noremap = true, silent = true })
 
 -- Window splitting (right and down)
 vim.keymap.set('n', '<leader>wd', '<C-w>s', { noremap = true, silent = true })
@@ -403,8 +403,8 @@ vim.opt.ignorecase = true
 vim.opt.smartcase = true
 vim.opt.number = true
 vim.g.have_nerd_font = true
-vim.opt.tabstop = 4
-vim.opt.shiftwidth = 4
+vim.opt.tabstop = 2
+vim.opt.shiftwidth = 2
 vim.opt.softtabstop = 4
 vim.opt.number = true
 

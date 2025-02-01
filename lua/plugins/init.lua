@@ -78,6 +78,11 @@ return {
 				end,
 			})
 
+			lspconfig.tailwindcss.setup({
+				capabilities = capabilities,
+				filetypes = { "typescript", "typescriptreact", "javascript", "javascriptreact" }, -- Add supported file types
+			})
+
 			-- Example: Lua language server
 			lspconfig.lua_ls.setup({
 				capabilities = capabilities,
