@@ -2,6 +2,13 @@ require("lazy").setup({{"nvim-treesitter/nvim-treesitter", build = ":TSUpdate"}}
 
 return {
 	{
+		"olimorris/codecompanion.nvim",
+		dependencies = {
+			"nvim-lua/plenary.nvim",
+			"nvim-treesitter/nvim-treesitter",
+		},
+	},
+	{
 		'nvim-lualine/lualine.nvim',
 		dependencies = { 'nvim-tree/nvim-web-devicons' }
 	},

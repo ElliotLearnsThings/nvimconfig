@@ -1,8 +1,41 @@
 require("config.lazy")
 
 
--- Lua line
+local function get_env_data()
+	local env_file = vim.fn.getcwd() .. "/.env"
+	local env_data = ""
+	local file = io.open(env_file, "r")
+	if file then
+		env_data = file:read("*a")
+		file:close()
+	end
+	return env_data
+end
 
+-- AI
+
+require("codecompanion").setup({
+  strategies = {
+    chat = {
+      adapter = "openai",
+    },
+    inline = {
+      adapter = "openai",
+    },
+  },
+  adapters = {
+    openai = function()
+      return require("codecompanion.adapters").extend("openai", {
+        env = {
+          api_key = get_env_data()
+        },
+      })
+    end,
+  },
+})
+
+-- Lua line
+--
 require('lualine').setup {
   options = {
     icons_enabled = true,
@@ -42,7 +75,12 @@ require('lualine').setup {
   tabline = {
     lualine_a = {'filename'},
     lualine_b = {'filetype', 'fileformat', 'encoding'},
-    lualine_c = {'datetime'},
+    lualine_c = {
+			{
+			'datetime',
+			style = "%b(%-d|%a)@%H:%M:%S", },
+
+	},
     lualine_x = {'progress','location'},
     lualine_y = {'diagnostics','diff', 'branch'},
     lualine_z = {'mode'}
@@ -99,7 +137,6 @@ null_ls.setup({
 
 -- Colors
 --
-vim.cmd[[colorscheme nightfox]]
 vim.o.termguicolors = true  -- Enable true color support
 
 require("nightfox").setup({
@@ -129,6 +166,7 @@ require("nightfox").setup({
 		},
 	},
 })
+vim.cmd[[colorscheme nightfox]]
 
 require("nvim-highlight-colors").setup {
 	---Render style
@@ -199,10 +237,10 @@ vim.keymap.set("n", "[g", "<cmd>cprev<CR>", { noremap = true, silent = true })
 
 -- Baseic config
 
-vim.keymap.set('n', '<C-[>', '<C-w>h', { noremap = true, silent = true })
+vim.keymap.set('n', '<C-h>', '<C-w>h', { noremap = true, silent = true })
 vim.keymap.set('n', '<C-j>', '<C-w>j', { noremap = true, silent = true })
 vim.keymap.set('n', '<C-k>', '<C-w>k', { noremap = true, silent = true })
-vim.keymap.set('n', '<C-]>', '<C-w>l', { noremap = true, silent = true })
+vim.keymap.set('n', '<C-l>', '<C-w>l', { noremap = true, silent = true })
 
 -- Window splitting (right and down)
 vim.keymap.set('n', '<leader>wd', '<C-w>s', { noremap = true, silent = true })
@@ -227,22 +265,28 @@ vim.keymap.set("n", "<C-s>", function() ui.nav_file(4) end)
 
 
 -- Oil config
+
 vim.keymap.set("n", "-", "<CMD>Oil<CR>", { desc = "Open parent directory" })
-local detail = false
+
 require("oil").setup({
 	keymaps = {
-		["gd"] = {
-			desc = "Toggle file detail view",
-			callback = function()
-				detail = not detail
-				if detail then
-					require("oil").set_columns({ "icon", "permissions", "size", "mtime" })
-				else
-					require("oil").set_columns({ "icon" })
-				end
-			end,
-		},
-	},
+		["g?"] = { "actions.show_help", mode = "n" },
+    ["<CR>"] = "actions.select",
+    ["<C-s>"] = { "actions.select", opts = { vertical = true } },
+    ["<C-h>"] = { "actions.select", opts = { horizontal = true } },
+    ["<C-t>"] = { "actions.select", opts = { tab = true } },
+    ["<C-p>"] = "actions.preview",
+    ["<C-c>"] = { "actions.close", mode = "n" },
+    ["<C-l>"] = "actions.refresh",
+    ["-"] = { "actions.parent", mode = "n" },
+    ["_"] = { "actions.open_cwd", mode = "n" },
+    ["`"] = { "actions.cd", mode = "n" },
+    ["~"] = { "actions.cd", opts = { scope = "tab" }, mode = "n" },
+    ["gs"] = { "actions.change_sort", mode = "n" },
+    ["gx"] = "actions.open_external",
+    ["g."] = { "actions.toggle_hidden", mode = "n" },
+    ["g\\"] = { "actions.toggle_trash", mode = "n" }
+  },
 
 	-- Oil will take over directory buffers (e.g. `vim .` or `:e src/`)
 	-- Set to false if you want some other plugin (e.g. netrw) to open when you edit directories.
