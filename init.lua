@@ -1,10 +1,6 @@
 require("config.lazy")
 
 
-
-
-
-
 -- Treesitter
 
 require'nvim-treesitter.configs'.setup {
