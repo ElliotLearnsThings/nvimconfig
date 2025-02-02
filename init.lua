@@ -1,6 +1,21 @@
 require("config.lazy")
 
 
+
+
+
+
+-- Treesitter
+
+require'nvim-treesitter.configs'.setup {
+  ensure_installed = { "yaml", "markdown" }
+}
+
+-- API KEY
+local function trim(s)
+  return (s:gsub("^%s*(.-)%s*$", "%1"))
+end
+
 local function get_env_data()
 	local env_file = vim.fn.getcwd() .. "/.env"
 	local env_data = ""
@@ -9,30 +24,77 @@ local function get_env_data()
 		env_data = file:read("*a")
 		file:close()
 	end
-	return env_data
+	-- print too
+	local key = trim(env_data)
+	return key
 end
+
+OPENAI_API_KEY = get_env_data()
 
 -- AI
 
 require("codecompanion").setup({
-  strategies = {
-    chat = {
-      adapter = "openai",
+	strategies = {
+		chat = {
+			adapter = "openai",
+			keymaps = {
+				close = {
+					modes = { n = "<C-x>", i = "<C-x>" },
+				},
+			},
+
+		},
+		inline = {
+			adapter = "openai",
+			keymaps = {
+				accept_change = {
+					modes = { n = "<Tab>" },
+					description = "Accept the suggested change",
+				},
+				reject_change = {
+					modes = { n = "<C-c>" },
+					description = "Reject the suggested change",
+				},
+			},
+		},
+	},
+
+	adapters = {
+		openai = function()
+			return require("codecompanion.adapters").extend("openai", {
+				env = {
+					api_key = OPENAI_API_KEY,  -- Ensure this returns a clean string
+				},
+				schema = {
+					model = {
+						default = "o1-mini",
+					},
+				},
+			})
+		end,
+	},
+
+  display = {
+    action_palette = {
+      width = 95,
+      height = 10,
+      prompt = "Prompt ",
+      provider = "telescope",
+      opts = {
+        show_default_actions = true,
+        show_default_prompt_library = true,
+      },
     },
-    inline = {
-      adapter = "openai",
-    },
-  },
-  adapters = {
-    openai = function()
-      return require("codecompanion.adapters").extend("openai", {
-        env = {
-          api_key = get_env_data()
-        },
-      })
-    end,
   },
 })
+
+
+vim.keymap.set({ "n", "v" }, "<C-a>", "<CMD>CodeCompanionActions<cr>", { noremap = true, silent = true })
+vim.keymap.set({ "n", "v" }, "<leader>aa", "<CMD>CodeCompanionChat Toggle<CR>", { noremap = true, silent = true })
+vim.keymap.set("v", "<leader>af", "<CMD>CodeCompanionChat Add<CR>", { noremap = true, silent = true })
+
+-- Expand 'cc' into 'CodeCompanion' in the command line
+vim.cmd[[cab cc CodeCompanion]]
 
 -- Lua line
 --
@@ -237,6 +299,7 @@ vim.keymap.set("n", "[g", "<cmd>cprev<CR>", { noremap = true, silent = true })
 
 -- Baseic config
 
+vim.keymap.set('n', '<C-[>', '<C-w>h', { noremap = true, silent = true })
 vim.keymap.set('n', '<C-h>', '<C-w>h', { noremap = true, silent = true })
 vim.keymap.set('n', '<C-j>', '<C-w>j', { noremap = true, silent = true })
 vim.keymap.set('n', '<C-k>', '<C-w>k', { noremap = true, silent = true })
@@ -272,7 +335,7 @@ require("oil").setup({
 	keymaps = {
 		["g?"] = { "actions.show_help", mode = "n" },
     ["<CR>"] = "actions.select",
-    ["<C-s>"] = { "actions.select", opts = { vertical = true } },
+    ["<C-]>"] = { "actions.select", opts = { vertical = true } },
     ["<C-h>"] = { "actions.select", opts = { horizontal = true } },
     ["<C-t>"] = { "actions.select", opts = { tab = true } },
     ["<C-p>"] = "actions.preview",
