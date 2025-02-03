@@ -103,6 +103,21 @@ return {
 				filetypes = { "typescript", "typescriptreact", "javascript", "javascriptreact" }, -- Add supported file types
 			})
 
+			lspconfig.matlab_ls.setup({
+				cmd = { vim.fn.stdpath("data") .. "/mason/bin/matlab-language-server", "--stdio" },
+				filetypes = { "matlab" },
+				root_dir = function(fname)
+					-- Fallback to current working directory if no other marker is found.
+					return vim.loop.cwd()
+				end,
+				-- Optional: any additional settings for MATLAB LS
+				settings = {
+					matlab = {
+						-- your matlab specific settings here
+					}
+				},
+			})
+
 			-- Example: Lua language server
 			lspconfig.lua_ls.setup({
 				capabilities = capabilities,

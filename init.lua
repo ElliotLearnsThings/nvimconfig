@@ -13,7 +13,7 @@ local function trim(s)
 end
 
 local function get_env_data()
-	local env_file = vim.fn.getcwd() .. "/.env"
+	local env_file = "/Users/elliothegraeus/.config/nvim/.env"
 	local env_data = ""
 	local file = io.open(env_file, "r")
 	if file then
@@ -85,7 +85,6 @@ require("codecompanion").setup({
 })
 
 
-vim.keymap.set({ "n", "v" }, "<C-a>", "<CMD>CodeCompanionActions<cr>", { noremap = true, silent = true })
 vim.keymap.set({ "n", "v" }, "<leader>aa", "<CMD>CodeCompanionChat Toggle<CR>", { noremap = true, silent = true })
 vim.keymap.set("v", "<leader>af", "<CMD>CodeCompanionChat Add<CR>", { noremap = true, silent = true })
 
@@ -141,7 +140,7 @@ require('lualine').setup {
 	},
     lualine_x = {'progress','location'},
     lualine_y = {'diagnostics','diff', 'branch'},
-    lualine_z = {'mode'}
+    lualine_z = {'searchcount', 'selectioncount', 'mode'}
 	},
   winbar = {},
   inactive_winbar = {},
@@ -296,10 +295,9 @@ vim.keymap.set("n", "[g", "<cmd>cprev<CR>", { noremap = true, silent = true })
 -- Baseic config
 
 vim.keymap.set('n', '<C-[>', '<C-w>h', { noremap = true, silent = true })
-vim.keymap.set('n', '<C-h>', '<C-w>h', { noremap = true, silent = true })
 vim.keymap.set('n', '<C-j>', '<C-w>j', { noremap = true, silent = true })
 vim.keymap.set('n', '<C-k>', '<C-w>k', { noremap = true, silent = true })
-vim.keymap.set('n', '<C-l>', '<C-w>l', { noremap = true, silent = true })
+vim.keymap.set('n', '<C-]>', '<C-w>l', { noremap = true, silent = true })
 
 -- Window splitting (right and down)
 vim.keymap.set('n', '<leader>wd', '<C-w>s', { noremap = true, silent = true })
@@ -331,7 +329,7 @@ require("oil").setup({
 	keymaps = {
 		["g?"] = { "actions.show_help", mode = "n" },
     ["<CR>"] = "actions.select",
-    ["<C-]>"] = { "actions.select", opts = { vertical = true } },
+    ["<C-s>"] = { "actions.select", opts = { vertical = true } },
     ["<C-h>"] = { "actions.select", opts = { horizontal = true } },
     ["<C-t>"] = { "actions.select", opts = { tab = true } },
     ["<C-p>"] = "actions.preview",
@@ -543,11 +541,6 @@ vim.g.copilot_enabled = 0
 
 vim.keymap.set('n', '<leader>ce', ':Copilot enable<CR>', { desc = 'Enable Copilot' })
 vim.keymap.set('n', '<leader>cr', ':Copilot disable<CR>', { desc = 'Disable Copilot' })
-
-vim.keymap.set('i', '<leader><leader>', 'copilot#Accept("\\<CR>")', {
-  expr = true,
-  replace_keycodes = false
-})
 
 vim.keymap.set('n', '<leader><Tab>', 'copilot#Accept("\\<CR>")', {
   expr = true,
