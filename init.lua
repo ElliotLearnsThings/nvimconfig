@@ -63,7 +63,7 @@ require("codecompanion").setup({
 				},
 				schema = {
 					model = {
-						default = "o1-mini",
+						default = "gpt-4o",
 					},
 				},
 			})
@@ -280,6 +280,9 @@ require("nvim-highlight-colors").setup {
     	exclude_buftypes = {}
 }
 -- Git config
+
+
+
 local neogit = require("neogit")
 
 vim.keymap.set("n", "<leader>gg", function () neogit.open() end)
