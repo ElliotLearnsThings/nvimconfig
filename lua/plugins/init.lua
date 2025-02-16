@@ -2,6 +2,18 @@ require("lazy").setup({{"nvim-treesitter/nvim-treesitter", build = ":TSUpdate"}}
 
 return {
 	{
+		"m4xshen/hardtime.nvim",
+		dependencies = { "MunifTanjim/nui.nvim" },
+		opts = {}
+	},
+	{
+		"MunifTanjim/prettier.nvim",
+	},
+	{
+		"phaazon/hop.nvim",
+		branch = 'v2',
+	},
+	{
 		"MeanderingProgrammer/render-markdown.nvim",
 		ft = { "markdown", "codecompanion" }
 	},
