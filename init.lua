@@ -1,5 +1,19 @@
 require("config.lazy")
 
+-- hardtime
+
+require("hardtime").setup({
+	-- Add "oil" to the disabled_filetypes
+	disabled_filetypes = { "qf", "netrw", "NvimTree", "lazy", "mason", "oil" },
+})
+
+vim.keymap.set({ "n", "v" }, "<leader>ht", "<CMD>Hardtime toggle<CR>", { noremap = true, silent = true })
+
+-- hop
+require("hop").setup()
+
+vim.keymap.set({ "n", "v" }, "<leader>fg", "<CMD>HopChar1 <CR>", { noremap = true, silent = true })
+vim.keymap.set({ "n", "v" }, "<leader>ff", "<CMD>HopPattern <CR>", { noremap = true, silent = true })
 
 -- Treesitter
 
@@ -13,7 +27,7 @@ local function trim(s)
 end
 
 local function get_env_data()
-	local env_file = "/Users/elliothegraeus/.config/nvim/.env"
+	local env_file = "C:\\Users\\hegra\\AppData\\Local\\nvim\\.env"
 	local env_data = ""
 	local file = io.open(env_file, "r")
 	if file then
@@ -21,12 +35,12 @@ local function get_env_data()
 		file:close()
 	end
 	-- print too
-	local key = trim(env_data)
+	local key = trim(env_data:gsub("\r", ""))
+	-- vim.notify("OPENAI_API_KEY: " .. tostring(key), vim.log.levels.INFO)
 	return key
 end
 
 OPENAI_API_KEY = get_env_data()
-
 -- AI
 
 require("codecompanion").setup({
@@ -59,7 +73,7 @@ require("codecompanion").setup({
 		openai = function()
 			return require("codecompanion.adapters").extend("openai", {
 				env = {
-					api_key = OPENAI_API_KEY,  -- Ensure this returns a clean string
+					api_key = OPENAI_API_KEY,
 				},
 				schema = {
 					model = {
@@ -133,9 +147,7 @@ require('lualine').setup {
     lualine_a = {'filename'},
     lualine_b = {'filetype', 'fileformat', 'encoding'},
     lualine_c = {
-			{
-			'datetime',
-			style = "%b(%-d|%a)@%H:%M:%S", },
+			'datetime'
 
 	},
     lualine_x = {'progress','location'},
@@ -146,6 +158,7 @@ require('lualine').setup {
   inactive_winbar = {},
   extensions = {}
 }
+
 
 -- null ls for prettier
 local null_ls = require("null-ls")
@@ -653,7 +666,6 @@ vim.keymap.set('n', '<leader>wf', '<C-w>v', { noremap = true, silent = true })
 
 vim.opt.clipboard:append { 'unnamedplus' }
 
-
 -- Harpoon config
 
 local mark = require("harpoon.mark")
@@ -879,7 +891,6 @@ require("oil").setup({
 vim.keymap.set("n", "<leader>u", vim.cmd.UndotreeToggle)
 
 vim.o.undofile = true
-vim.o.undodir = os.getenv("HOME") .. "/.vim/undodir"
 vim.g.undotree_WindowLayout = 2
 
 -- Copilot config
@@ -913,7 +924,7 @@ vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = 'Show diagn
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
 
 vim.opt.relativenumber = true
-vim.opt.scrolloff = 30
+vim.opt.scrolloff = 8
 vim.opt.cursorline = true
 vim.opt.inccommand = 'split'
 vim.opt.timeoutlen = 300
