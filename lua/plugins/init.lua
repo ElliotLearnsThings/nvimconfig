@@ -2,6 +2,7 @@ require("lazy").setup({{"nvim-treesitter/nvim-treesitter", build = ":TSUpdate"}}
 
 return {
 	{
+<<<<<<< HEAD
 		"m4xshen/hardtime.nvim",
 		dependencies = { "MunifTanjim/nui.nvim" },
 		opts = {}
@@ -13,6 +14,42 @@ return {
 		"phaazon/hop.nvim",
 		branch = 'v2',
 	},
+=======
+		"rcarriga/nvim-dap-ui",
+	},
+	{
+    "folke/lazydev.nvim",
+    ft = "lua", -- only load on lua files
+    opts = {
+      library = {
+        -- See the configuration section for more details
+        -- Load luvit types when the `vim.uv` word is found
+        { path = "${3rd}/luv/library", words = { "vim%.uv" } },
+      },
+    },
+  },
+	{
+		"nvim-neotest/nvim-nio",
+	},
+	{
+		"mfussenegger/nvim-dap",
+	},
+	{
+		"tpope/vim-abolish",
+	},
+	-- {
+		-- "m4xshen/hardtime.nvim",
+		-- dependencies = { "MunifTanjim/nui.nvim" },
+		-- opts = {}
+	-- },
+	{
+		"MunifTanjim/prettier.nvim",
+	},
+	-- {
+		-- "phaazon/hop.nvim",
+		-- branch = 'v2',
+	-- },
+>>>>>>> new-git-config
 	{
 		"MeanderingProgrammer/render-markdown.nvim",
 		ft = { "markdown", "codecompanion" }
@@ -107,6 +144,11 @@ return {
 				end,
 			})
 
+			lspconfig.rust_analyzer.setup({
+					capabilities = capabilities,
+					filetypes = { "rust" },
+			})
+
 			lspconfig.tailwindcss.setup({
 			 	capabilities = capabilities,
 				filetypes = { "typescript", "typescriptreact", "javascript", "javascriptreact" }, -- Add supported file types
@@ -164,6 +206,13 @@ return {
 			"hrsh7th/cmp-buffer",
 			"hrsh7th/cmp-path",
 		},
+		opts = function(_, opts)
+			opts.sources = opts.sources or {}
+			table.insert(opts.sources, {
+				name = "lazydev",
+				group_index = 0, -- set group index to 0 to skip loading LuaLS completions
+			})
+		end,
 		config = function()
 			local cmp = require("cmp")
 			cmp.setup({

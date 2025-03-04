@@ -1,4 +1,5 @@
 require("config.lazy")
+require("config.dap_config")
 
 -- hardtime
 
@@ -14,6 +15,21 @@ require("hop").setup()
 
 vim.keymap.set({ "n", "v" }, "<leader>fg", "<CMD>HopChar1 <CR>", { noremap = true, silent = true })
 vim.keymap.set({ "n", "v" }, "<leader>ff", "<CMD>HopPattern <CR>", { noremap = true, silent = true })
+
+-- hardtime
+
+-- require("hardtime").setup({
+	-- Add "oil" to the disabled_filetypes
+	-- disabled_filetypes = { "qf", "netrw", "NvimTree", "lazy", "mason", "oil", "undotree", "codecompanion" },
+-- })
+
+-- vim.keymap.set({ "n", "v" }, "<leader>ht", "<CMD>Hardtime toggle<CR>", { noremap = true, silent = true })
+
+-- hop
+-- require("hop").setup()
+
+-- vim.keymap.set({ "n", "v" }, "<leader>fg", "<CMD>HopChar1 <CR>", { noremap = true, silent = true })
+-- vim.keymap.set({ "n", "v" }, "<leader>ff", "<CMD>HopPattern <CR>", { noremap = true, silent = true })
 
 -- Treesitter
 
@@ -33,6 +49,8 @@ local function get_env_data()
 	if file then
 		env_data = file:read("*a")
 		file:close()
+	else
+		vim.notify("COULD NOT FIND ANTHROPIC KEY", vim.log.levels.INFO)
 	end
 	-- print too
 	local key = trim(env_data:gsub("\r", ""))
@@ -40,13 +58,13 @@ local function get_env_data()
 	return key
 end
 
-OPENAI_API_KEY = get_env_data()
--- AI
 
+-- codecompanion setup
+ANTHROPIC_API_KEY = get_env_data()
 require("codecompanion").setup({
 	strategies = {
 		chat = {
-			adapter = "openai",
+			adapter = "anthropic",
 			keymaps = {
 				close = {
 					modes = { n = "<C-x>", i = "<C-x>" },
@@ -55,7 +73,7 @@ require("codecompanion").setup({
 
 		},
 		inline = {
-			adapter = "openai",
+			adapter = "anthropic",
 			keymaps = {
 				accept_change = {
 					modes = { n = "<Tab>" },
@@ -70,14 +88,14 @@ require("codecompanion").setup({
 	},
 
 	adapters = {
-		openai = function()
-			return require("codecompanion.adapters").extend("openai", {
+		anthropic = function()
+			return require("codecompanion.adapters").extend("anthropic", {
 				env = {
-					api_key = OPENAI_API_KEY,
+					api_key = ANTHROPIC_API_KEY,
 				},
 				schema = {
 					model = {
-						default = "gpt-4o",
+						default = "claude-3-7-sonnet-latest",
 					},
 				},
 			})
@@ -85,6 +103,20 @@ require("codecompanion").setup({
 	},
 
   display = {
+		chat = {
+			window = {
+				layout = "horizontal",
+				positon = "top",
+				height = 0.3,
+			},
+		},
+		inline = {
+			window = {
+				layout = "horizontal",
+				positon = "top",
+				height = 0.3,
+			},
+		},
     action_palette = {
       width = 95,
       height = 10,
@@ -95,10 +127,11 @@ require("codecompanion").setup({
         show_default_prompt_library = true,
       },
     },
+    buffer = {
+      provider = "telescope", -- Add telescope provider for buffer command
+    },
   },
 })
-
-
 vim.keymap.set({ "n", "v" }, "<leader>aa", "<CMD>CodeCompanionChat Toggle<CR>", { noremap = true, silent = true })
 vim.keymap.set("v", "<leader>af", "<CMD>CodeCompanionChat Add<CR>", { noremap = true, silent = true })
 
@@ -295,6 +328,12 @@ require("nvim-highlight-colors").setup {
 -- Git config
 
 
+require("diffview").setup({
+  default_args = {
+    DiffviewOpen = { "--split=horizontal" },  -- This would make DiffView split horizontally
+  },
+  -- Other DiffView configuration options...
+})
 
 local neogit = require("neogit")
 
@@ -445,7 +484,7 @@ neogit.setup {
     kind = "auto",
   },
   preview_buffer = {
-    kind = "floating_console",
+    kind = "split_below",
   },
   popup = {
     kind = "split",
@@ -653,7 +692,6 @@ neogit.setup {
 -- vim.keymap.set("n", "[g", "<cmd>cprev<CR>", { noremap = true, silent = true })
 
 -- Baseic config
-
 vim.keymap.set('n', '<C-[>', '<C-w>h', { noremap = true, silent = true })
 vim.keymap.set('n', '<C-j>', '<C-w>j', { noremap = true, silent = true })
 vim.keymap.set('n', '<C-k>', '<C-w>k', { noremap = true, silent = true })
@@ -662,6 +700,13 @@ vim.keymap.set('n', '<C-]>', '<C-w>l', { noremap = true, silent = true })
 -- Window splitting (right and down)
 vim.keymap.set('n', '<leader>wd', '<C-w>s', { noremap = true, silent = true })
 vim.keymap.set('n', '<leader>wf', '<C-w>v', { noremap = true, silent = true })
+
+-- Window resizing
+vim.keymap.set('n', '<leader>w<left>', '5<C-w><', { noremap = true, silent = true, desc = "Decrease width" })
+vim.keymap.set('n', '<leader>w<right>', '5<C-w>>', { noremap = true, silent = true, desc = "Increase width" })
+vim.keymap.set('n', '<leader>w<up>', '5<C-w>+', { noremap = true, silent = true, desc = "Increase height" })
+vim.keymap.set('n', '<leader>w<down>', '5<C-w>-', { noremap = true, silent = true, desc = "Decrease height" })
+vim.keymap.set('n', '<leader>w=', '<C-w>=', { noremap = true, silent = true, desc = "Equal dimensions" })
 
 
 vim.opt.clipboard:append { 'unnamedplus' }
@@ -897,6 +942,24 @@ vim.g.undotree_WindowLayout = 2
 -- Default disabled
 vim.g.copilot_enabled = 0
 
+
+-- Function to replace occurrences of the first string with the second string in a given range
+function ReplaceInRange(from, to)
+  -- Construct the command using the given inputs
+  local command = string.format(":'<,'>s/%s/%s/g", from, to)
+  -- Execute the command in Vim
+  vim.cmd(command)
+end
+
+-- Bind function to a custom command that works in visual mode
+vim.api.nvim_exec([[
+  command! -range -nargs=+ ReplaceInRange lua ReplaceInRange(<f-args>)
+]], false)
+
+-- Buffer swap
+vim.api.nvim_set_keymap('n', '[a', ':bprev<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap('n', ']a', ':bnext<CR>', { noremap = true, silent = true })
+
 vim.keymap.set('n', '<leader>ce', ':Copilot enable<CR>', { desc = 'Enable Copilot' })
 vim.keymap.set('n', '<leader>cr', ':Copilot disable<CR>', { desc = 'Disable Copilot' })
 
@@ -923,6 +986,12 @@ vim.keymap.set('n', ']d', vim.diagnostic.goto_next, { desc = 'Go to next [D]iagn
 vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = 'Show diagnostic [E]rror messages' })
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
 
+-- buffer config and opts
+
+vim.keymap.set('n', '<leader>[a', "<CMD>bprev<CR>", { desc = 'Go buffer prev' })
+vim.keymap.set('n', '<leader>]a', "<CMD>bnext<CR>", { desc = 'Go buffer next' })
+
+
 vim.opt.relativenumber = true
 vim.opt.scrolloff = 8
 vim.opt.cursorline = true
@@ -937,39 +1006,4 @@ vim.opt.tabstop = 2
 vim.opt.shiftwidth = 2
 vim.opt.softtabstop = 4
 vim.opt.number = true
-
--- vim.opt.clipboard = "unnamedplus"
--- Lua function to search for .venv/scripts/python.exe and set Neovim's Python interpreter
-local function set_python_interpreter()
-    local current_dir = vim.fn.getcwd()  -- Get the current working directory
-    local path_separator = package.config:sub(1,1) -- Get path separator based on OS
-
-    -- Function to join paths
-    local function join_paths(...)
-        local args = {...}
-        return table.concat(args, path_separator)
-    end
-
-    -- Traverse up the directory tree to find .venv
-    while current_dir do
-        local python_path = join_paths(current_dir, ".venv", "Scripts", "python.exe")
-
-        -- Check if the Python executable exists
-        if vim.fn.filereadable(python_path) == 1 then
-            vim.g.python3_host_prog = python_path
-            print("Neovim Python interpreter set to: " .. python_path)
-            return
-        end
-
-        -- Move to the parent directory
-        local parent_dir = vim.fn.fnamemodify(current_dir, ":h")
-        if parent_dir == current_dir then
-            break  -- Reached the root directory
-        end
-        current_dir = parent_dir
-    end
-
-    -- If no .venv is found, print a message
-    print("No .venv found; using system Python interpreter")
-end
 
