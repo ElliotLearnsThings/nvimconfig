@@ -1,41 +1,51 @@
 require("config.lazy")
 require("config.dap_config")
 
+-- Terminal 
+
+-- Remove relative line numbers in terminal
+vim.cmd([[au TermOpen term://* setlocal nonumber norelativenumber]])
+
+local terminal = require("config.terminal_config")
+vim.keymap.set("n", "<leader>nt", terminal.new_tab, { desc = "Open a new terminal tab" })
+vim.keymap.set("n", "<leader>st", function()
+  local height = 4
+  vim.cmd("botright " .. height .. "split term://zsh")
+  vim.cmd("startinsert")
+end, { desc = "Open a small terminal at bottom" })
+
+-- Copilot 
+require("config.copilot_config")
+
 -- hardtime
+-- require("config.hardtime_config")
 
-require("hardtime").setup({
-	-- Add "oil" to the disabled_filetypes
-	disabled_filetypes = { "qf", "netrw", "NvimTree", "lazy", "mason", "oil" },
-})
+-- Tab config
+local tab = require("config.tab_config")
+vim.keymap.set("n", "<leader>1", function() tab.set_tab(1) end, { desc = "Go to tab 1" })
+vim.keymap.set("n", "<leader>2", function() tab.set_tab(2) end, { desc = "Go to tab 2" })
+vim.keymap.set("n", "<leader>3", function() tab.set_tab(3) end, { desc = "Go to tab 3" })
+vim.keymap.set("n", "<leader>4", function() tab.set_tab(4) end, { desc = "Go to tab 4" })
+vim.keymap.set("n", "<leader>5", function() tab.set_tab(5) end, { desc = "Go to tab 5" })
+vim.keymap.set("n", "<leader>6", function() tab.set_tab(6) end, { desc = "Go to tab 6" })
+vim.keymap.set("n", "<leader>7", function() tab.set_tab(7) end, { desc = "Go to tab 7" })
+vim.keymap.set("n", "<leader>8", function() tab.set_tab(8) end, { desc = "Go to tab 8" })
+vim.keymap.set("n", "<leader>9", function() tab.set_tab(9) end, { desc = "Go to tab 9" })
 
-vim.keymap.set({ "n", "v" }, "<leader>ht", "<CMD>Hardtime toggle<CR>", { noremap = true, silent = true })
+vim.keymap.set("n", "<leader>r1", function() tab.remove_tab(1) end, { desc = "Go to tab 1" })
+vim.keymap.set("n", "<leader>r2", function() tab.remove_tab(2) end, { desc = "Go to tab 2" })
+vim.keymap.set("n", "<leader>r3", function() tab.remove_tab(3) end, { desc = "Go to tab 3" })
+vim.keymap.set("n", "<leader>r4", function() tab.remove_tab(4) end, { desc = "Go to tab 4" })
+vim.keymap.set("n", "<leader>r5", function() tab.remove_tab(5) end, { desc = "Go to tab 5" })
+vim.keymap.set("n", "<leader>r6", function() tab.remove_tab(6) end, { desc = "Go to tab 6" })
+vim.keymap.set("n", "<leader>r7", function() tab.remove_tab(7) end, { desc = "Go to tab 7" })
+vim.keymap.set("n", "<leader>r8", function() tab.remove_tab(8) end, { desc = "Go to tab 8" })
+vim.keymap.set("n", "<leader>r9", function() tab.remove_tab(9) end, { desc = "Go to tab 9" })
 
--- hop
-require("hop").setup()
-
-vim.keymap.set({ "n", "v" }, "<leader>fg", "<CMD>HopChar1 <CR>", { noremap = true, silent = true })
-vim.keymap.set({ "n", "v" }, "<leader>ff", "<CMD>HopPattern <CR>", { noremap = true, silent = true })
-
--- hardtime
-
--- require("hardtime").setup({
-	-- Add "oil" to the disabled_filetypes
-	-- disabled_filetypes = { "qf", "netrw", "NvimTree", "lazy", "mason", "oil", "undotree", "codecompanion" },
--- })
-
--- vim.keymap.set({ "n", "v" }, "<leader>ht", "<CMD>Hardtime toggle<CR>", { noremap = true, silent = true })
-
--- hop
--- require("hop").setup()
-
--- vim.keymap.set({ "n", "v" }, "<leader>fg", "<CMD>HopChar1 <CR>", { noremap = true, silent = true })
--- vim.keymap.set({ "n", "v" }, "<leader>ff", "<CMD>HopPattern <CR>", { noremap = true, silent = true })
 
 -- Treesitter
+require("config.treesitter_config")
 
-require'nvim-treesitter.configs'.setup {
-  ensure_installed = { "yaml", "markdown" }
-}
 
 -- API KEY
 local function trim(s)
@@ -43,7 +53,7 @@ local function trim(s)
 end
 
 local function get_env_data()
-	local env_file = "C:\\Users\\hegra\\AppData\\Local\\nvim\\.env"
+	local env_file = "/Users/elliothegraeus/.config/nvim/.env"
 	local env_data = ""
 	local file = io.open(env_file, "r")
 	if file then
@@ -152,13 +162,13 @@ require('lualine').setup {
     },
     ignore_focus = {},
     always_divide_middle = true,
-    always_show_tabline = true,
     globalstatus = false,
     refresh = {
       statusline = 100,
       tabline = 100,
       winbar = 100,
-    }
+    },
+		always_show_tabline = true,
   },
   sections = {
     lualine_a = {},
@@ -183,7 +193,14 @@ require('lualine').setup {
 			'datetime'
 
 	},
-    lualine_x = {'progress','location'},
+    lualine_x = {'progress','location',
+				{
+					"tabs",
+					cond = function()
+						return #vim.fn.gettabinfo() > 1
+					end,
+				} 
+			},
     lualine_y = {'diagnostics','diff', 'branch'},
     lualine_z = {'searchcount', 'selectioncount', 'mode'}
 	},
@@ -702,28 +719,24 @@ vim.keymap.set('n', '<leader>wd', '<C-w>s', { noremap = true, silent = true })
 vim.keymap.set('n', '<leader>wf', '<C-w>v', { noremap = true, silent = true })
 
 -- Window resizing
-vim.keymap.set('n', '<leader>w<left>', '5<C-w><', { noremap = true, silent = true, desc = "Decrease width" })
-vim.keymap.set('n', '<leader>w<right>', '5<C-w>>', { noremap = true, silent = true, desc = "Increase width" })
-vim.keymap.set('n', '<leader>w<up>', '5<C-w>+', { noremap = true, silent = true, desc = "Increase height" })
-vim.keymap.set('n', '<leader>w<down>', '5<C-w>-', { noremap = true, silent = true, desc = "Decrease height" })
-vim.keymap.set('n', '<leader>w=', '<C-w>=', { noremap = true, silent = true, desc = "Equal dimensions" })
+vim.keymap.set('n', '<leader>wh', '5<C-w><', { noremap = true, silent = true, desc = "Decrease width" })
+vim.keymap.set('n', '<leader>wl', '5<C-w>>', { noremap = true, silent = true, desc = "Increase width" })
+vim.keymap.set('n', '<leader>wk', '5<C-w>+', { noremap = true, silent = true, desc = "Increase height" })
+vim.keymap.set('n', '<leader>wj', '5<C-w>-', { noremap = true, silent = true, desc = "Decrease height" })
+
+vim.keymap.set('n', '<leader>wH', '50<C-w><', { noremap = true, silent = true, desc = "Decrease width" })
+vim.keymap.set('n', '<leader>wL', '50<C-w>>', { noremap = true, silent = true, desc = "Increase width" })
+vim.keymap.set('n', '<leader>wK', '50<C-w>+', { noremap = true, silent = true, desc = "Increase height" })
+vim.keymap.set('n', '<leader>wJ', '50<C-w>-', { noremap = true, silent = true, desc = "Decrease height" })
+
+vim.cmd([[highlight WinSeparator guifg=#4e545c guibg=None]])
 
 
 vim.opt.clipboard:append { 'unnamedplus' }
 
 -- Harpoon config
 
-local mark = require("harpoon.mark")
-local ui = require("harpoon.ui")
-
-vim.keymap.set("n", "<leader>a", mark.add_file)
-vim.keymap.set("n", "<C-e>", ui.toggle_quick_menu)
-
-vim.keymap.set("n", "<C-t>", function() ui.nav_file(1) end)
-vim.keymap.set("n", "<C-y>", function() ui.nav_file(2) end)
-vim.keymap.set("n", "<C-n>", function() ui.nav_file(3) end)
-vim.keymap.set("n", "<C-s>", function() ui.nav_file(4) end)
-
+require("config.harpoon_config")
 
 -- Oil config
 
@@ -991,9 +1004,8 @@ vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagn
 vim.keymap.set('n', '<leader>[a', "<CMD>bprev<CR>", { desc = 'Go buffer prev' })
 vim.keymap.set('n', '<leader>]a', "<CMD>bnext<CR>", { desc = 'Go buffer next' })
 
-
 vim.opt.relativenumber = true
-vim.opt.scrolloff = 8
+vim.opt.scrolloff = 30
 vim.opt.cursorline = true
 vim.opt.inccommand = 'split'
 vim.opt.timeoutlen = 300
@@ -1006,4 +1018,88 @@ vim.opt.tabstop = 2
 vim.opt.shiftwidth = 2
 vim.opt.softtabstop = 4
 vim.opt.number = true
+vim.opt.showtabline = 1
+
+-- Toggle diagnostic visibility
+vim.keymap.set('n', '<leader>td', function()
+  local diagnostics_visible = vim.diagnostic.is_disabled()
+  if diagnostics_visible then
+    vim.diagnostic.enable()
+    vim.notify("Diagnostics enabled", vim.log.levels.INFO)
+  else
+    vim.diagnostic.disable()
+    vim.notify("Diagnostics disabled", vim.log.levels.INFO)
+  end
+end, { desc = "Toggle diagnostic visibility" })
+
+function LineNumberColors()
+    vim.api.nvim_set_hl(0, 'LineNrAbove', { fg='#51B3EC', bold=true })
+    vim.api.nvim_set_hl(0, 'LineNr', { fg='white', bold=true })
+    vim.api.nvim_set_hl(0, 'LineNrBelow', { fg='#FB508F', bold=true })
+end
+
+-- Function to set a mark with <C-g> in normal mode, or go to mark if mark is set
+vim.keymap.set('n', 'm', '<Nop>', { noremap = true })
+vim.keymap.set('n', '`', '<Nop>', { noremap = true })
+
+
+
+-- Map <C-g> to set marks (waits for next character)
+vim.keymap.set('n', '<C-g>', function()
+    local mark_val = vim.fn.getchar()
+    if mark_val == 0 then
+        return
+    end
+    
+    -- Handle control keys (ASCII 1-26)
+    local mark
+    if mark_val >= 1 and mark_val <= 26 then
+        mark = string.char(mark_val + 96) -- Convert to lowercase letter
+    else
+        mark = string.char(mark_val)
+    end
+    
+    local line = vim.fn.line('.')
+    local col = vim.fn.col('.')
+    vim.fn.setpos("'" .. mark, {0, line, col, 0})
+    print("Mark '" .. mark .. "' set")
+end, { noremap = true })
+
+-- Map <C-h> to jump to marks (waits for next character)
+vim.keymap.set('n', '<C-h>', function()
+    local mark_val = vim.fn.getchar()
+    if mark_val == 0 then
+        return
+    end
+    
+    -- Handle control keys (ASCII 1-26)
+    local mark
+    if mark_val >= 1 and mark_val <= 26 then
+        mark = string.char(mark_val + 96) -- Convert to lowercase letter
+    else
+        mark = string.char(mark_val)
+    end
+    
+    local pos = vim.fn.getpos("'" .. mark)
+    if pos[2] == 0 then
+        print("Mark '" .. mark .. "' not set")
+        return
+    end
+    vim.cmd("normal! '" .. mark)
+end, { noremap = true })
+
+
+-- Swap "c" with "d" in normal mode
+-- vim.keymap.set('n', 'd', 'c', {noremap = true})
+-- vim.keymap.set('n', 'c', 'd', {noremap = true})
+-- vim.keymap.set('v', 'd', 'c', {noremap = true})
+-- vim.keymap.set('v', 'c', 'd', {noremap = true})
+-- vim.keymap.set('n', 'dd', 'cc', {noremap = true})
+-- vim.keymap.set('n', 'cc', 'dd', {noremap = true})
+-- vim.keymap.set('n', 'D', 'C', {noremap = true})
+-- vim.keymap.set('n', 'C', 'D', {noremap = true})
+-- vim.keymap.set('v', 'D', 'C', {noremap = true})
+-- vim.keymap.set('v', 'C', 'D', {noremap = true})
+
+LineNumberColors()
 

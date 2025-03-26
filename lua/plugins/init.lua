@@ -2,19 +2,9 @@ require("lazy").setup({{"nvim-treesitter/nvim-treesitter", build = ":TSUpdate"}}
 
 return {
 	{
-<<<<<<< HEAD
-		"m4xshen/hardtime.nvim",
-		dependencies = { "MunifTanjim/nui.nvim" },
-		opts = {}
+		"github/copilot.vim"
 	},
 	{
-		"MunifTanjim/prettier.nvim",
-	},
-	{
-		"phaazon/hop.nvim",
-		branch = 'v2',
-	},
-=======
 		"rcarriga/nvim-dap-ui",
 	},
 	{
@@ -49,7 +39,6 @@ return {
 		-- "phaazon/hop.nvim",
 		-- branch = 'v2',
 	-- },
->>>>>>> new-git-config
 	{
 		"MeanderingProgrammer/render-markdown.nvim",
 		ft = { "markdown", "codecompanion" }
@@ -181,6 +170,8 @@ return {
 				},
 			})
 
+
+			-- You can add this to your LSP setup:
 			lspconfig.basedpyright.setup({
 				on_attach = function(client, bufnr)
 					local buf_map = function(mode, lhs, rhs, opts)
