@@ -1,6 +1,14 @@
 require("lazy").setup({{"nvim-treesitter/nvim-treesitter", build = ":TSUpdate"}})
 
 return {
+
+	{
+		"lewis6991/gitsigns.nvim",
+	},
+
+--	{
+--		"windwp/windline.nvim"
+--	},
 	{
 		"github/copilot.vim"
 	},
@@ -86,7 +94,7 @@ return {
 		dependencies = { "williamboman/mason.nvim", "neovim/nvim-lspconfig" },
 		config = function()
 			require("mason-lspconfig").setup({
-				ensure_installed = { "lua_ls", "pyright" }, -- Adjust to your needs
+				ensure_installed = { "lua_ls" }, -- Adjust to your needs
 				automatic_installation = true,
 			})
 
@@ -136,27 +144,36 @@ return {
 			lspconfig.rust_analyzer.setup({
 					capabilities = capabilities,
 					filetypes = { "rust" },
-			})
+						settings = {
+							['rust-analyzer'] = {
+								cargo = {
+									loadOutDirsFromCheck = true,
+									allFeatures = true,
+									allTargets = true,
+									buildScripts = {
+										enable = true,
+									},
+								},
+								procMacro = {
+									enable = true,
+								},
+								checkOnSave = {
+									allFeatures = true,
+									allTargets = true,
+									command = "clippy",
+								},
+								diagnostics = {
+									enableExperimental = true,
+								},
+							}
+						},
+					})
 
 			lspconfig.tailwindcss.setup({
 			 	capabilities = capabilities,
 				filetypes = { "typescript", "typescriptreact", "javascript", "javascriptreact" }, -- Add supported file types
 			})
 
-			lspconfig.matlab_ls.setup({
-				cmd = { vim.fn.stdpath("data") .. "/mason/bin/matlab-language-server", "--stdio" },
-				filetypes = { "matlab" },
-				root_dir = function(fname)
-					-- Fallback to current working directory if no other marker is found.
-					return vim.loop.cwd()
-				end,
-				-- Optional: any additional settings for MATLAB LS
-				settings = {
-					matlab = {
-						-- your matlab specific settings here
-					}
-				},
-			})
 
 			-- Example: Lua language server
 			lspconfig.lua_ls.setup({

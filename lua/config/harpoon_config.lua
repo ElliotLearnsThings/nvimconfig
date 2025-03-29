@@ -7,12 +7,33 @@ local ui = require("harpoon.ui")
 vim.keymap.set("n", "<leader>a", mark.add_file)
 vim.keymap.set("n", "<C-e>", ui.toggle_quick_menu)
 
-vim.keymap.set("n", "<C-1>", function() ui.nav_file(1) end)
-vim.keymap.set("n", "<C-2>", function() ui.nav_file(2) end)
-vim.keymap.set("n", "<C-3>", function() ui.nav_file(3) end)
-vim.keymap.set("n", "<C-4>", function() ui.nav_file(4) end)
-vim.keymap.set("n", "<C-5>", function() ui.nav_file(5) end)
-vim.keymap.set("n", "<C-6>", function() ui.nav_file(6) end)
+-- Custom navigation function that handles oil:/// paths correctly
+local function nav_file_with_oil_fix(index)
+	local file = mark.get_marked_file_name(index)
+
+	if file and file:match("^oil:") then
+		-- Ensure oil paths always have three slashes
+		if not file:match("^oil:///") then
+			file = file:gsub("^oil:/+", "oil:///")
+		end
+
+		-- Escape any special characters in the path
+		file = vim.fn.fnameescape(file)
+
+		-- Use Vim's edit command directly
+		vim.cmd("edit " .. file)
+	else
+		-- Use default Harpoon navigation for non-oil files
+		ui.nav_file(index)
+	end
+end
+
+vim.keymap.set("n", "<F1>", function() nav_file_with_oil_fix(1) end)
+vim.keymap.set("n", "<F2>", function() nav_file_with_oil_fix(2) end)
+vim.keymap.set("n", "<F3>", function() nav_file_with_oil_fix(3) end)
+vim.keymap.set("n", "<F4>", function() nav_file_with_oil_fix(4) end)
+vim.keymap.set("n", "<F5>", function() nav_file_with_oil_fix(5) end)
+vim.keymap.set("n", "<F6>", function() nav_file_with_oil_fix(6) end)
 
 return M
 --[[

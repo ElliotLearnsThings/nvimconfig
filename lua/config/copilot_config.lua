@@ -13,4 +13,8 @@ expr = true,
 replace_keycodes = false
 })
 
+-- Copilot config
+-- Default disabled
+vim.g.copilot_enabled = 0
+
 return M
