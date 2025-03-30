@@ -5,6 +5,9 @@ require("config.dap_config")
 
 require("config.git_signs_config")
 
+-- Lsp config
+require("config.lsp_config")
+
 vim.env.RUST_ANALYZER_MEMORY_LIMIT = "2048"  -- Set memory limit in MB
 
 -- Terminal 
@@ -122,8 +125,6 @@ vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous [D]
 vim.keymap.set('n', ']d', vim.diagnostic.goto_next, { desc = 'Go to next [D]iagnostic message' })
 vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = 'Show diagnostic [E]rror messages' })
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
-
--- buffer config and opts
 
 vim.keymap.set('n', '<leader>[a', "<CMD>bprev<CR>", { desc = 'Go buffer prev' })
 vim.keymap.set('n', '<leader>]a', "<CMD>bnext<CR>", { desc = 'Go buffer next' })

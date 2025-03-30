@@ -56,7 +56,7 @@ require("codecompanion").setup({
 				},
 				schema = {
 					model = {
-						default = "claude-3-7-sonnet-latest",
+						default = "claude-3-7-sonnet-extended-thinking",
 					},
 				},
 			})

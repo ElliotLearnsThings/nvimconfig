@@ -6,7 +6,7 @@ local oil = require("oil")
 
 -- Oil config
 
-vim.keymap.set("n", "-", "<CMD>Oil<CR>", { desc = "Open parent directory" })
+--- vim.keymap.set("n", "-", "<CMD>Oil<CR>", { desc = "Open parent directory" })
 
 local oil = require("oil")
 
@@ -39,8 +39,9 @@ oil.setup({
 			use_float = true,
 			float_opts = {
 				border = "rounded",
-				winblend = 20,
+				winblend = 15,
 				width = 40,
+				winhighlight = "Normal:OilFloat",  -- Custom highlight group
 				height = 20,
 				relative = "cursor",
 				row = 0,
@@ -85,13 +86,14 @@ oil.setup({
 	use_default_keymaps = true,
 	extra_scp_args = {},
 	float = {
-		padding = 2,
-		max_width = 0,
+		padding = 6,
+		max_width = 0.5,
 		max_height = 0,
 		border = "rounded",
 		win_options = {
 			winblend = 20,
 		},
+    winhighlight = "Normal:OilFloat",  -- Custom highlight group
 		preview_split = "auto",
 		override = function(conf)
 			return conf
@@ -107,29 +109,29 @@ oil.setup({
 		height = nil,
 		border = "rounded",
 		win_options = {
-			winblend = 20,
+			winblend = 15,
 		},
 		update_on_cursor_moved = true,
 	},
 	preview_win_opts = {
 		is_floating = true,
 		border = "rounded",
-		winblend = 20,
+		winblend = 15,
 		relative = "cursor",
 		row = 1,
 		col = 0,
 	},
 	progress = {
-		max_width = 0.9,
+		max_width = 0.4,
 		min_width = { 40, 0.4 },
 		width = nil,
-		max_height = { 10, 0.9 },
+		max_height = { 10, 0.7 },
 		min_height = { 5, 0.1 },
 		height = nil,
 		border = "rounded",
-		minimized_border = "none",
+		minimized_border = "rounded",
 		win_options = {
-			winblend = 20,
+			winblend = 15,
 		},
 	},
 	ssh = {
@@ -141,6 +143,14 @@ oil.setup({
 })
 
 vim.keymap.set("n", "-", function()
-  oil.open()
+  oil.open_float()
 end, { desc = "Open parent directory in float" })
+
+-- Create blcoking background for oil
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = "oil",
+	callback = function()
+		vim.cmd("setlocal winhighlight=Normal:OilFloat")
+	end,
+})
 
