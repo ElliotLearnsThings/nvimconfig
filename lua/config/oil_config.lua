@@ -143,14 +143,5 @@ oil.setup({
 })
 
 vim.keymap.set("n", "-", function()
-  oil.open_float()
+  oil.open()
 end, { desc = "Open parent directory in float" })
-
--- Create blcoking background for oil
-vim.api.nvim_create_autocmd("FileType", {
-	pattern = "oil",
-	callback = function()
-		vim.cmd("setlocal winhighlight=Normal:OilFloat")
-	end,
-})
-

@@ -1,7 +1,7 @@
-asdfasdf
-MAP = {
+# Season mapping: 0=Winter, 1=Spring, 2=Summer, 3=Autumn
+MONTH_TO_SEASON = {
     "january": 0,
-    "feburary": 0,
+    "february": 0,
     "march": 1,
     "april": 1,
     "may": 1,
@@ -14,48 +14,125 @@ MAP = {
     "december": 0,
 }
 
-def read_file():
+# Season names for readability
+SEASONS = {
+    0: "",
+    1: "this is new",
+    2: "this is new",
+    3: "this is new"
+}
 
-    with open("data.txt") as f:
-        data = f.readlines()
-        data = [value.strip() for datapoint in data for value in datapoint.split("/")]
-        _ = data.pop(0)
+def read_file(filename="data.txt"):
+    """
+    Read animal data from file.
+    Expected format: each line contains animal data separated by '/'
+    Returns a list of animal records, where each record is a list of values
+    """
+    try:
+        with open(filename) as f:
+            lines = f.readlines()
+            
+        # Process the data - split each line by '/' and create a list of animal records
+        animals = []
+        for line in lines[1:]:  # Skip header line
+            animal_data = [value.strip() for value in line.split("/")]
+            animals.append(animal_data)
+            
+        return animals
+    except FileNotFoundError:
+        print(f"Error: File '{filename}' not found.")
+        return []
+    except Exception as e:
+        print(f"Error reading file: {e}")
+        return []
 
-    return data
+def is_time_overlap(visitor_start, visitor_end, animal_start, animal_end):
+    """
+    Check if the visitor's time overlaps with the animal's active time.
+    Returns True if there is an overlap, False otherwise.
+    """
+    # Check if there's an overlap between the two time ranges
+    return max(visitor_start, animal_start) < min(visitor_end, animal_end)
 
 def main():
-
-    s = input("What day will you come?")
-    s = s.strip()
-    strings = s.split(" ")
-    # Get the enter time
-    
-    enter_times = strings[2].split("-")
-    e_start_time = int(enter_times[0].strip())
-    e_end_time = int(enter_times[1].strip())
-
+    """Main function to process user input and display available animals."""
     try:
-        season = MAP[strings[1]]
-    except Exception:
-        print("bad input")
-        return
-    animals = read_file()
-    for animal in animals:
+        # Get user input
+        user_input = input("What day will you come? (Format: day month time-range, e.g., '15 june 9-17'): ")
+        user_input = user_input.strip().lower()
+        
+        # Parse input
+        parts = user_input.split()
+        if len(parts) < 3:
+            print("Error: Invalid input format. Please use format 'day month time-range'")
+            return
+            
+        # Extract day, month, and time range
+        day = parts[0]
+        month = parts[1]
+        time_range = parts[2]
+        
+        # Parse visitor's time range
         try:
-            # 1 is the hibernation
-            if (animal[1] == "winter" and season == 0) or (animal[1] == "spring" and season == 1) or (animal[1] == "summer" and season == 2) or (animal[1] == "autumn" and season == 3):
+            time_parts = time_range.split("-")
+            visitor_start_time = int(time_parts[0].strip())
+            visitor_end_time = int(time_parts[1].strip())
+            
+            if visitor_start_time >= visitor_end_time:
+                print("Error: Start time must be before end time")
+                return
+                
+            if visitor_start_time < 0 or visitor_end_time > 24:
+                print("Error: Time must be between 0 and 24")
+                return
+        except (ValueError, IndexError):
+            print("Error: Invalid time format. Please use format 'start-end' (e.g., '9-17')")
+            return
+        
+        # Get season from month
+        try:
+            season = MONTH_TO_SEASON[month]
+            current_season = SEASONS[season]
+            print(f"You're visiting in {current_season} (season {season})")
+        except KeyError:
+            print(f"Error: Invalid month '{month}'. Please enter a valid month name.")
+            return
+        
+        # Get animal data
+        animals = read_file()
+        if not animals:
+            return
+            
+        print(f"Animals available during your visit on {day} {month} between {visitor_start_time}-{visitor_end_time}:")
+        found_animals = False
+        
+        # Process each animal
+        for animal in animals:
+            try:
+                # Skip if animal is in hibernation during this season
+                animal_hibernation_season = animal[1].lower()
+                if animal_hibernation_season == SEASONS[season]:
+                    continue
+                    
+                # Get animal's active hours
+                active_hours = animal[3].split("-")
+                animal_start_time = int(active_hours[0].strip())
+                animal_end_time = int(active_hours[1].strip())
+                
+                # Check if visitor's time overlaps with animal's active time
+                if is_time_overlap(visitor_start_time, visitor_end_time, animal_start_time, animal_end_time):
+                    print(f"{animal[0]}: {animal_start_time}-{animal_end_time}")
+                    found_animals = True
+                    
+            except (IndexError, ValueError) as e:
+                print(f"Warning: Could not process animal data: {animal}. Error: {e}")
                 continue
-            times = animal[3].split("-")
-        except Exception:
-            continue
-        try:
-            l_start_time = int(times[0].strip())
-            l_end_time = int(times[1].strip())
-        except Exception:
-            print("bad input")
-            return
-        if not ((e_end_time > l_start_time) or (e_start_time <= e_end_time)):
-            return
-        print(f"{animal[0]}: {l_start_time}-{l_end_time}")
+        
+        if not found_animals:
+            print("No animals available during your specified time.")
+            
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
 
-main()
+if __name__ == "__main__":
+    main()

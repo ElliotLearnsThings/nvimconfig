@@ -1,14 +1,95 @@
 require("lazy").setup({{"nvim-treesitter/nvim-treesitter", build = ":TSUpdate"}})
 
+
+
+local function get_api_key()
+
+	local api_key = require("config.api_key")
+	-- vim.notify(api_key, vim.log.levels.INFO)
+	return api_key
+end
+
+API_KEY = get_api_key()
+
+PYTHON_PATH_FINDER = require("config.local_python_config")
+
 return {
+	{
+		"ThePrimeagen/vim-be-good",
+	},
+	{
+		"yetone/avante.nvim",
+		event = "VeryLazy",
+		version = false, -- Never set this value to "*"! Never!
+		opts = {
+			-- add any opts here
+			-- for example
+		provider = "claude",
+		claude = {
+				model = "claude-3-7-sonnet-20250219", -- You can use other Claude models as well
+				-- api_key = API_KEY
+			},
+		},
+		--behaviour = {
+			--enable_claude_text_editor_tool_mode = true,
+		--},
+		-- if you want to build from source then do `make BUILD_FROM_SOURCE=true`
+		build = "make",
+		-- build = "powershell -ExecutionPolicy Bypass -File Build.ps1 -BuildFromSource false" -- for windows
+		dependencies = {
+			"nvim-treesitter/nvim-treesitter",
+			"stevearc/dressing.nvim",
+			"nvim-lua/plenary.nvim",
+			"MunifTanjim/nui.nvim",
+			--- The below dependencies are optional,
+			"echasnovski/mini.pick", -- for file_selector provider mini.pick
+			"nvim-telescope/telescope.nvim", -- for file_selector provider telescope
+			"hrsh7th/nvim-cmp", -- autocompletion for avante commands and mentions
+			"ibhagwan/fzf-lua", -- for file_selector provider fzf
+			"nvim-tree/nvim-web-devicons", -- or echasnovski/mini.icons
+			{
+				-- support for image pasting
+				"HakonHarnes/img-clip.nvim",
+				event = "VeryLazy",
+				opts = {
+					-- recommended settings
+					default = {
+						embed_image_as_base64 = false,
+						prompt_for_file_name = false,
+						drag_and_drop = {
+							insert_mode = true,
+						},
+						-- required for Windows users
+						use_absolute_path = true,
+					},
+				},
+			},
+			{
+				-- Make sure to set this up properly if you have lazy=true
+				'MeanderingProgrammer/render-markdown.nvim',
+				opts = {
+					file_types = { "markdown", "Avante" },
+				},
+				ft = { "markdown", "Avante" },
+			},
+		},
+	},
+	{
+    'MeanderingProgrammer/render-markdown.nvim',
+    dependencies = { 'nvim-treesitter/nvim-treesitter', 'echasnovski/mini.nvim' }, -- if you use the mini.nvim suite
+    -- dependencies = { 'nvim-treesitter/nvim-treesitter', 'echasnovski/mini.icons' }, -- if you use standalone mini plugins
+    -- dependencies = { 'nvim-treesitter/nvim-treesitter', 'nvim-tree/nvim-web-devicons' }, -- if you prefer nvim-web-devicons
+    ---@module 'render-markdown'
+    ---@type render.md.UserConfig
+    opts = {
+
+		}
+	},
 
 	{
 		"lewis6991/gitsigns.nvim",
 	},
 
---	{
---		"windwp/windline.nvim"
---	},
 	{
 		"github/copilot.vim"
 	},
@@ -47,17 +128,6 @@ return {
 		-- "phaazon/hop.nvim",
 		-- branch = 'v2',
 	-- },
-	{
-		"MeanderingProgrammer/render-markdown.nvim",
-		ft = { "markdown", "codecompanion" }
-	},
-	{
-		"olimorris/codecompanion.nvim",
-		dependencies = {
-			"nvim-lua/plenary.nvim",
-			"nvim-treesitter/nvim-treesitter",
-		},
-	},
 	{
 		'nvim-lualine/lualine.nvim',
 		dependencies = { 'nvim-tree/nvim-web-devicons' }
@@ -100,6 +170,45 @@ return {
 
 			local lspconfig = require("lspconfig")
 			local capabilities = require("cmp_nvim_lsp").default_capabilities() -- Optional: integrate with nvim-cmp
+
+			local PYTHON_PATH = PYTHON_PATH_FINDER.get_python_path_wrapper(vim.fn.getcwd(), false)
+
+			if PYTHON_PATH then
+				lspconfig.pylsp.setup({
+					root_dir = function(fname)
+						return vim.fn.getcwd()
+					end,
+					cmd = { PYTHON_PATH, "-m", "pylsp" },
+					capabilities = capabilities,
+					filetypes = { "python" },
+					-- Ignore whitespace warnings (E305, E501)
+					settings = {
+						pylsp = {
+							plugins = {
+								flake8 = { enabled = true, ignore = { "E501", "E305", "E303", "E302" } },
+								pycodestyle = { enabled = false },
+								pyflakes = { enabled = false },
+								mccabe = { enabled = false },
+								pylsp_mypy = {
+									enabled = true,
+									live_mode = true,
+									dmypy = false,
+								},
+								rope_completion = { enabled = true },
+								rope_autoimport = { enabled = true, memory = true },
+								jedi_completion = {
+									enabled = true,
+									include_params = true,
+									include_class_objects = true,
+									include_function_objects = true,
+									fuzzy = true
+								},
+							},
+						},
+					},
+
+				})
+			end
 
 			lspconfig.ts_ls.setup({
 				capabilities = capabilities, -- Ensure capabilities are defined elsewhere
@@ -175,6 +284,14 @@ return {
 			})
 
 
+			require('lspconfig').sqlls.setup {
+				cmd = { "sql-language-server", "up", "--method", "stdio" },
+				filetypes = { "sql" },
+				root_dir = function(fname)
+					return vim.fn.getcwd()
+				end,
+				settings = {}
+			}
 			-- Example: Lua language server
 			lspconfig.lua_ls.setup({
 				capabilities = capabilities,
@@ -186,23 +303,6 @@ return {
 					},
 				},
 			})
-
-
-			-- You can add this to your LSP setup:
-			lspconfig.basedpyright.setup({
-				on_attach = function(client, bufnr)
-					local buf_map = function(mode, lhs, rhs, opts)
-						opts = opts or {}
-						opts.buffer = bufnr
-						vim.keymap.set(mode, lhs, rhs, opts)
-					end
-
-					-- Example keybindings for LSP
-					buf_map("n", "gd", vim.lsp.buf.definition, { desc = "Go to definition" })
-					buf_map("n", "K", vim.lsp.buf.hover, { desc = "Hover info" })
-				end,
-			})
-			lspconfig.gopls.setup({})
 
 		end,
 	},
@@ -272,3 +372,4 @@ return {
 		config = true
 	}
 }
+

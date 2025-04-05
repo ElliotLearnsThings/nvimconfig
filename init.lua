@@ -1,6 +1,25 @@
 require("config.lazy")
 require("config.dap_config")
 
+require("config.buf_switch").setup({
+	debug = false,
+})
+
+-- Renam variable config
+require("config.change_variable_config").setup({
+	keymap = "<leader>cv"
+})
+
+-- Remap dvorak config
+require("config.dvorak").setup({
+  keymap = "<leader>00"
+})
+
+-- macro config
+require("config.macro_config")
+
+-- codecompanion setup
+
 -- Git signs config
 
 require("config.git_signs_config")
@@ -39,7 +58,7 @@ require("config.copilot_config")
 require("config.treesitter_config")
 
 -- CC config
-require("config.cc_config")
+-- require("config.cc_config")
 
 -- Lua line
 --- require("config.lua_line_config")
@@ -53,16 +72,6 @@ require("config.colors_config")
 --- Neogit config
 require("config.neogit_config")
 
--- vim.keymap.set("n", "<leader>gs", ":Git<CR>", { desc = "Open Git status" })
--- vim.keymap.set("n", "<leader>gc", ":Git commit -m '", { desc = "Open Git commit" })
--- vim.keymap.set("n", "<leader>ga", ":Git add -u<CR>'", { desc = "Open Git add" })
--- vim.keymap.set("n", "<leader>gq", ":Git add ", { desc = "Open Git add" })
--- vim.keymap.set("n", "<leader>gp", ":Git pull<CR>", { desc = "Open Git pull" })
--- vim.keymap.set("n", "<leader>gf", ":Git push<CR>", { desc = "Open Git push" })
--- vim.keymap.set("n", "<leader>gh", ":Gdiffsplit<CR>", { desc = "Open Git diff" })
--- vim.keymap.set("n", "<leader>gg", ":Git difftool<CR>", { desc = "Open Git diff" })
--- vim.keymap.set("n", "]g", "<cmd>cnext<CR>", { noremap = true, silent = true })
--- vim.keymap.set("n", "[g", "<cmd>cprev<CR>", { noremap = true, silent = true })
 
 -- window config
 require("config.window_config")
@@ -71,7 +80,7 @@ vim.opt.clipboard:append { 'unnamedplus' }
 
 -- Harpoon config
 
-require("config.harpoon_config")
+-- require("config.harpoon_config")
 
 --- Oil config
 require("config.oil_config")
@@ -96,9 +105,6 @@ vim.api.nvim_exec([[
 command! -range -nargs=+ ReplaceInRange lua ReplaceInRange(<f-args>)
 ]], false)
 
--- Buffer swap
-vim.api.nvim_set_keymap('n', '[a', ':bprev<CR>', { noremap = true, silent = true })
-vim.api.nvim_set_keymap('n', ']a', ':bnext<CR>', { noremap = true, silent = true })
 
 vim.keymap.set('n', '<leader>ce', ':Copilot enable<CR>', { desc = 'Enable Copilot' })
 vim.keymap.set('n', '<leader>cr', ':Copilot disable<CR>', { desc = 'Disable Copilot' })

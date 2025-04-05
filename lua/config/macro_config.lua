@@ -1,0 +1,44 @@
+-- local check_large_work = function (input)
+-- 	-- Check if the string contains z or Z return true else false
+-- 	if string.find(input, "z") or string.find(input, "Z") then
+-- 		return "W"
+-- 	else
+-- 		return string.lower(input)
+-- 	end
+-- end
+-- 
+-- vim.keymap.set("n", "ci", function() -- Get the next character input
+-- 	local input = vim.fn.getchar()
+-- 	local input_str = vim.fn.nr2char(input)
+-- 
+-- 	-- This is either the input or W
+-- 	local char_str = check_large_work(input_str)
+-- 
+-- 	-- get command from user (char) input (quickly)
+-- 	local cmd = vim.fn.nr2char(vim.fn.getchar())
+-- 
+-- 	-- Use feedkeys instead of vim.cmd
+-- 	local keys = cmd .. "i" .. char_str
+-- 	vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(keys, true, false, true), 'n', false)
+-- end)
+-- 
+-- vim.keymap.set("n", "CI", function()
+-- 	-- Get the next character input
+-- 	local input = vim.fn.getchar()
+-- 	local input_str = vim.fn.nr2char(input)
+-- 
+-- 	-- This is either the input or W
+-- 	local char_str = check_large_work(input_str)
+-- 
+-- 	local cmd = vim.fn.nr2char(vim.fn.getchar())
+-- 
+-- 	-- Use feedkeys instead of vim.cmd
+-- 	local keys = cmd .. "a" .. char_str
+-- 	vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(keys, true, false, true), 'n', false)
+-- end)
+-- 
+-- -- This is not-ok
+-- 
+-- -- (some text)   (some other text)
+-- 
+-- -- {some func}
