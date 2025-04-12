@@ -100,17 +100,18 @@ function BufferEntryValidator:check_disallowed_buffers()
 		ft = "nofile" -- Invalidate if the buffer number is invalid
 	end
 
+	--vim.notify(vim.inspect{buf_type=buf_type, ft=ft, filepath=self.filepath})
 
-	if buf_type == "nofile" then -- Allow normal buffers and 'nofile' buffers
+	if buf_type == "nofile" then -- Allow normal buffers and 'nofile' buffers TODO make this a setting
 		return true
 	end
 
-	--if not vim.bo[self.bufnr].buflisted then -- Skip unlisted buffers
-		--return true
-	--end
+	if not vim.bo[self.bufnr].buflisted then -- Skip unlisted buffers
+		return true
+	end
 
 	-- Add more specific filters if needed (like oil, telescope, etc.)
-	if ft == "oil" or (self.filepath and self.filepath:match("^oil://")) or ft:match("harpoon") or ft:match("TelescopePrompt") then
+	if ft == "oil" or (self.filepath and self.filepath:match("^oil://")) or ft:match("harpoon") or ft:match("TelescopePrompt") or (self.filepath and self.filepath:match("Neogit")) then
 		return true
 	end
 	return false

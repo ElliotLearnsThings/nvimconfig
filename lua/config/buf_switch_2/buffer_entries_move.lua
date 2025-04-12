@@ -32,11 +32,13 @@ function Mover:go_to_index(index)
 
 	if not is_valid and last_entry.filepath then
 		vim.print"invalid file"
+		self.utils.remove(self, last_entry.filepath)
 		return false
 	end
 
 	if not is_valid and last_entry.bufnr then
 		vim.print"bad"
+		self.utils.remove(self, nil, last_entry.bufnr)
 		return false
 	end
 
@@ -86,11 +88,13 @@ function Mover:go_back(amount)
 
 	if not is_valid and last_entry.filepath then
 		vim.print"invalid file"
+		self.utils.remove(self, last_entry.filepath)
 		return false
 	end
 
 	if not is_valid and last_entry.bufnr then
 		vim.print"bad"
+		self.utils.remove(self, nil, last_entry.bufnr)
 		return false
 	end
 
@@ -136,10 +140,12 @@ function Mover:go_forward(amount)
 	local is_valid = last_entry.validator.validate(last_entry, self)
 
 	if not is_valid and last_entry.filepath then
+		self.utils.remove(self, last_entry.filepath)
 		return false
 	end
 
 	if not is_valid and last_entry.bufnr then
+		self.utils.remove(self, nil, last_entry.bufnr)
 		return false
 	end
 
