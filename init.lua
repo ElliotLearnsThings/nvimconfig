@@ -1,9 +1,8 @@
 require("config.lazy")
 require("config.dap_config")
 
-require("config.buf_switch").setup({
+require("config.buf_switch_2").setup({
 	debug = false,
-	mode = "tree",
 })
 
 -- Renam variable config
