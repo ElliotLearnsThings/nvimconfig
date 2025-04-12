@@ -1,16 +1,174 @@
+--- NOTES
+--- Add tree support for moving buffers around
+--- Add harpoon mode (fixed anchors set with keybind)
+--- Add Anchored buffers (buffers that can never be removed)
+--- Add global state for the buffer history
+
+---@class bufferEntry
+---@field bufnr number Buffer number
+---@field filepath string Buffer file path
+
 ---@class bufferHistory
----@field buffer_history table[] List of entries with {bufnr=number, filepath=string}
+---@field buffer_history bufferEntry[] List of entries with {bufnr=number, filepath=string}
 ---@field current integer current buffer index
 ---@field debug boolean debug mode
 ---@field is_load boolean flag for initial load
 ---@field is_viewing boolean is viewing previous
 ---@field last_save_time number timestamp of last save
+---@field mode string current mode (flat or tree)
 local M = {}
 
+DEBUG_TREE_MODE = false
+
+---@class bufferEntryMovement Entry with a level
+---@field Entry bufferEntry The entry
+---@field level integer The level of the entry in the tree
+
+---@class BufferTreeHistory stores the history of movement between buffers
+---@field buffer_tree_history bufferEntryMovement[]	list of entries 
+---@field max_level integer The max level of the entry in the tree
+local buffer_tree_history = {}
+
+function buffer_tree_history.new()
+	local this = {
+		buffer_tree_history = {},
+		max_level = 0,
+	}
+
+	return setmetatable(this, {
+		__index = buffer_tree_history,
+		__tostring = function(self)
+			return "BufferTreeHistory: " .. vim.inspect(self.buffer_tree_history)
+		end
+	})
+end
+
+BUFFER_TREE_HISTORY = buffer_tree_history.new()
+DEBUG_TREE_HISTORY = false
+
+--- Just remove any duplicated next to each other
+---@param self BufferTreeHistory
+---@return nil
+function buffer_tree_history:validate()
+    local prev_entry = nil
+    local cur_entry = nil
+    -- Loop iterates through the list inside the BUFFER_TREE_HISTORY object
+    for _, entry in ipairs(self.buffer_tree_history) do  -- Line ~49/50
+         prev_entry = cur_entry
+         cur_entry = entry
+         if prev_entry == nil then
+             goto continue
+         end
+         -- Compare filepaths of the contained Entry tables
+         if prev_entry.Entry.filepath == cur_entry.Entry.filepath then -- Likely Line 55 based on structure
+             -- *** Potential Problem Area ***
+             table.remove(self.buffer_tree_history, cur_entry - 1) -- Line ~57
+         end
+         ::continue::
+    end
+end
+--- We are expecting that the last entry in the buffer tree is the most recent, the prune flagger if you will
+---@param self BufferTreeHistory
+---@return boolean True if it was pruned, false otherwise
+function BUFFER_TREE_HISTORY:prune()
+	-- Prune the buffer tree history to remove entries that are no longer valid
+	--
+	-- This will not always prune, but check if it should and then do if it should
+	-- We check for prune if the follow condition is true:
+	-- 1. The buffer tree history is not empty
+	-- 2. The max level is greater than 0
+	-- 3. The max level is greater than the current buffer history size
+	--
+	-- We then check if the new buffer in the movement is one level greater than the previous movement
+	-- if it is, we need to prune the history, and set the new max level
+	-- First checks
+	if #self.buffer_tree_history == 0 or #self.buffer_tree_history == 1 then
+		if DEBUG_TREE_HISTORY then vim.print("[BUFFER_TREE_HISTORY] #self.buffer_tree_history == 0 or 1, did not proon", vim.log.levels.INFO) end
+		return false
+	end
+	if self.max_level == 0 or self.max_level == 1 then
+		if DEBUG_TREE_HISTORY then vim.print("[BUFFER_TREE_HISTORY] self.max_level == 0 or self.max_level == 1, did not proon", vim.log.levels.INFO) end
+		return false
+	end
+	if self.max_level >= #self.buffer_tree_history then
+		if DEBUG_TREE_HISTORY then vim.print("[BUFFER_TREE_HISTORY] self.max_level >= #self.buffer_tree_history, did not proon", vim.log.levels.INFO) end
+		return false
+	end
+
+	-- If we make it here, check if we need to prune
+	local current_level = self.buffer_tree_history[#self.buffer_tree_history].level
+	local previous_level = self.buffer_tree_history[#self.buffer_tree_history - 1].level
+
+	local last_entry
+
+	local delta_level = current_level - previous_level
+
+	if DEBUG_TREE_HISTORY then vim.print("[BUFFER_TREE_HISTORY] delta_level: " .. delta_level, vim.log.levels.INFO) end
+
+	if delta_level > 1 then
+		--if DEBUG_TREE_HISTORY then 
+		if DEBUG_TREE_HISTORY then vim.print("[BUFFER_TREE_HISTORY] PRUNING!", vim.log.levels.INFO) end
+		if DEBUG_TREE_HISTORY then vim.print("[BUFFER_TREE_HISTORY] object before prune") end
+		--end
+
+		-- Pop out the last entry
+		last_entry = table.remove(self.buffer_tree_history)
+		current_level = previous_level + 1
+		if DEBUG_TREE_HISTORY then vim.print("[BUFFER_TREE_HISTORY] current_level:" .. current_level, vim.log.levels.INFO) end
+
+		-- We need to prune the history
+		-- We need to remove all entries that are greater than the current level
+		for i = #self.buffer_tree_history, 1, -1 do
+			local entry = self.buffer_tree_history[i]
+			if entry.level >= current_level then
+				if DEBUG_TREE_HISTORY then vim.print("found matching entry with current_level:" .. current_level) end
+				table.remove(self.buffer_tree_history, i)
+			end
+		end
+		self.max_level = current_level
+	else
+		return false
+	end
+
+	-- Now insert the new entry
+	local new_entry = {
+		Entry = last_entry.Entry,
+		level = current_level,
+	}
+	table.insert(self.buffer_tree_history, new_entry)
+	if DEBUG_TREE_HISTORY then vim.print("Final object after pruning:" .. vim.inspect(self)) end
+	return true
+end
+
+---@enum MODES
+local MODES = {
+	FLAT = "flat",
+	TREE = "tree"
+}
+
 --- Create a new buffer history object
+--- @param mode MODES The mode that it will use
 --- @param debug boolean whether to enable debug mode
-function M.new(debug)
+function M.new(mode, debug)
 	local bufnr = vim.api.nvim_get_current_buf()
+
+	local valid_mode = false
+
+	-- Validate input mode
+	for _, cur_mode in pairs(MODES) do
+		if mode == cur_mode then
+			valid_mode = true
+			break
+		end
+	end
+
+	if not valid_mode then
+		vim.notify("Invalid mode: " .. mode .. ". Defaulting to FLAT mode.", vim.log.levels.WARN)
+		mode = MODES.FLAT
+	else
+		vim.notify("Buffer history initialized with mode: " .. mode, vim.log.levels.INFO)
+	end
+
 
 	if bufnr == -1 then
 		vim.notify("Error setting up buffer history", vim.log.levels.ERROR)
@@ -33,6 +191,7 @@ function M.new(debug)
 		debug = debug,
 		is_load = true,
 		is_viewing = false,
+		mode = mode or MODES.TREE, -- Need to make a switcher for the setup later
 	}
 
 	return setmetatable(this, {
@@ -41,6 +200,86 @@ function M.new(debug)
 			return "BufferHistory: " .. vim.inspect(self.buffer_history)
 		end
 	})
+end
+
+--- Removes the first matching entry from buffer_history by bufnr or filepath.
+---@param self bufferHistory
+---@param input_bufnr? number Buffer number to remove.
+---@param input_filepath? string Filepath to remove.
+---@return boolean True if an entry was removed, false otherwise.
+function M:remove_entry(input_bufnr, input_filepath)
+    local has_filepath = not (input_filepath == nil or input_filepath == "")
+    local has_bufnr = not (input_bufnr == nil)
+
+    if not has_filepath and not has_bufnr then
+        if self.debug then
+            vim.notify("[remove_entry] WARNING: Tried to remove without valid bufnr or filepath", vim.log.levels.WARN)
+        end
+        return false
+    end
+
+    local idx_to_remove = nil
+    -- Iterate backwards for safer removal while iterating
+    for i = #self.buffer_history, 1, -1 do
+        local entry = self.buffer_history[i]
+        local match = false
+
+        -- Prioritize bufnr if provided
+        if has_bufnr and entry.bufnr == input_bufnr then
+            match = true
+        -- Fallback to filepath if bufnr not provided or didn't match
+        elseif has_filepath and not has_bufnr and entry.filepath == input_filepath then
+             match = true
+        -- If both provided, check filepath only if bufnr matched (or if bufnr didn't exist in entry)
+         elseif has_bufnr and has_filepath and entry.bufnr == input_bufnr and entry.filepath == input_filepath then
+              match = true
+         elseif has_filepath and entry.filepath == input_filepath and entry.bufnr == nil then -- Match filepath if entry has no bufnr
+              match = true
+        end
+
+        if match then
+            idx_to_remove = i
+            break -- Remove only the first match found (from the end)
+        end
+    end
+
+    if idx_to_remove then
+        local removed = table.remove(self.buffer_history, idx_to_remove)
+        if self.debug then
+            vim.notify("[remove_entry] Removed entry at index " .. idx_to_remove .. ": bufnr=" .. (removed.bufnr or "nil") .. ", filepath=" .. (removed.filepath or "nil"), vim.log.levels.INFO)
+        end
+
+        -- Adjust the 'current' pointer correctly
+        if #self.buffer_history == 0 then
+             self.current = 0 -- History is now empty
+             if self.debug then vim.notify("[remove_entry] History empty, current set to 0.", vim.log.levels.DEBUG) end
+        elseif idx_to_remove < self.current then
+             -- If removed item was before current, decrement current
+             self.current = self.current - 1
+             if self.debug then vim.notify("[remove_entry] Removed before current, current adjusted to: " .. self.current, vim.log.levels.DEBUG) end
+        elseif idx_to_remove == self.current then
+             -- If removed item *was* current, clamp current to the new end of history
+             -- or stay at current-1 if that makes sense (depending on desired behavior after deleting current)
+             -- Clamping to end is usually safer unless implementing specific nav logic.
+             self.current = math.min(self.current, #self.buffer_history)
+             -- If the list wasn't empty before removal, current should be at least 1
+             self.current = math.max(1, self.current)
+              if self.debug then vim.notify("[remove_entry] Removed current item, current clamped/adjusted to: " .. self.current, vim.log.levels.DEBUG) end
+        else -- idx_to_remove > self.current
+             -- If removed item was after current, current pointer is unaffected relative to remaining items. No change needed.
+             if self.debug then vim.notify("[remove_entry] Removed after current, current ("..self.current..") remains unchanged.", vim.log.levels.DEBUG) end
+        end
+        -- Ensure current doesn't exceed bounds after adjustment
+        self.current = math.min(self.current, #self.buffer_history)
+        if #self.buffer_history > 0 then self.current = math.max(1, self.current) end
+
+        return true
+    else
+        if self.debug then
+             vim.notify("[remove_entry] Entry not found for bufnr=" .. (input_bufnr or "nil") .. ", filepath=" .. (input_filepath or "nil"), vim.log.levels.DEBUG)
+        end
+        return false
+    end
 end
 
 function M:validate()
@@ -87,121 +326,300 @@ function M:validate()
 			table.remove(self.buffer_history, idx)
 		end
 	end
-
-	-- Update the current pointer if needed
-	if self.current > #self.buffer_history then
-		self.current = #self.buffer_history
-	end
 end
 
+--- Clears the buffer history and adds the current buffer.
+---@param self bufferHistory
 function M:clear()
 	self.buffer_history = {}
 	self.current = 0
-end
 
-function M:on_attach()
-	self:validate()
-	if self.is_load then
-		vim.notify("Skipping on load")
-		self.is_load = false
-		return
-	end
-
-	local bufnr = vim.api.nvim_get_current_buf()
-	local filepath = vim.api.nvim_buf_get_name(bufnr)
-
-	-- Multiple checks to identify special buffers
-	local buf_type = vim.bo[bufnr].buftype
-	local ft = vim.bo[bufnr].filetype
-
-	-- Skip special buffer types
-	if buf_type ~= "" then
-		if self.debug then
-			vim.notify("Skipping non-normal buffer type: " .. buf_type, vim.log.levels.DEBUG)
-		end
-		return
-	end
-
-	-- Skip oil buffers specifically
-	if ft == "oil" then
-		if self.debug then
-			vim.notify("Skipping oil buffer", vim.log.levels.DEBUG)
-		end
-		return
-	end
-
-	-- Skip buffers with oil:// protocol
-	if filepath:match("^oil://") then
-		if self.debug then
-			vim.notify("Skipping oil:// buffer", vim.log.levels.DEBUG)
-		end
-		return
-	end
-
-	if ft:match("harpoon") or ft:match("TelescopePrompt") then
-		if self.debug then
-			vim.notify("Skipping harpoon/telescope menu", vim.log.levels.DEBUG)
-		end
-		return
-	end
-
-	if self.debug then
-		vim.notify("buffer_history: " .. vim.inspect(self.buffer_history), vim.log.levels.INFO)
-	end
-
-	if bufnr == -1 then
-		vim.notify("Error attaching buffer history", vim.log.levels.ERROR)
-		return
-	end
-
-	-- Check if the last buffer is the same as the current
-	local last_entry = self.buffer_history[self.current]
-	if last_entry and last_entry.bufnr == bufnr then
-		if self.debug then
-			vim.notify("Skipping buffer history update, same buffer: " .. bufnr)
-		end
-		return
-	end
-
-	-- Check if the buffer is already in the history
-	local existing_idx = nil
-	for idx, entry in ipairs(self.buffer_history) do
-		if entry.bufnr == bufnr or (filepath ~= "" and entry.filepath == filepath) then
-			existing_idx = idx
-			break
-		end
-	end
-
-	if existing_idx then
-		-- Buffer exists in history
-		if not self.is_viewing then
-			-- Remove it from current position
-			table.remove(self.buffer_history, existing_idx)
-			-- Add it to the end for recency
-			local new_entry = {
-				bufnr = bufnr,
-				filepath = filepath ~= "" and filepath or nil
-			}
-			table.insert(self.buffer_history, new_entry)
-			self.current = #self.buffer_history
-		else
-			self.is_viewing = false
-		end
-	else
-		-- If not in history, add it to the end
+	local current_buffer = vim.api.nvim_get_current_buf()
+	if current_buffer ~= -1 and vim.api.nvim_buf_is_valid(current_buffer) then
+		local current_filepath = vim.api.nvim_buf_get_name(current_buffer)
 		local new_entry = {
-			bufnr = bufnr,
-			filepath = filepath ~= "" and filepath or nil
+			bufnr = current_buffer,
+			filepath = current_filepath ~= "" and current_filepath or nil,
 		}
 		table.insert(self.buffer_history, new_entry)
-		self.current = #self.buffer_history
+		self.current = 1 -- History now has one item at index 1
+		if self.debug then vim.notify("[clear] Buffer history cleared. Added current buffer: " .. current_buffer, vim.log.levels.INFO) end
+	else
+		if self.debug then vim.notify("[clear] Buffer history cleared. No valid current buffer to add.", vim.log.levels.INFO) end
 	end
+	-- No need to validate an empty or single-item list
+end
 
-	if self.debug then
-		vim.notify("Buffer history updated with buffer number: " .. bufnr)
-		vim.notify("current_index: " .. self.current)
-		vim.notify("buffer_history: " .. vim.inspect(self.buffer_history))
-	end
+--- Called on BufEnter to update the history based on the current mode.
+---@param self bufferHistory
+---@return nil
+---
+function M:on_attach()
+
+    -- Initial load flag check
+    if self.is_load then
+        if self.debug then vim.notify("[on_attach] Skipping update on initial load.", vim.log.levels.DEBUG) end
+        self.is_load = false
+        -- Optionally, validate right after load if needed
+        -- self:validate()
+        return
+    end
+
+    -- Get current buffer info
+    local bufnr = vim.api.nvim_get_current_buf()
+    if bufnr == -1 or not vim.api.nvim_buf_is_valid(bufnr) then
+        if self.debug then vim.notify("[on_attach] Invalid buffer number: " .. bufnr, vim.log.levels.WARN) end
+        return
+    end
+    local filepath = vim.api.nvim_buf_get_name(bufnr)
+    local effective_filepath = filepath ~= "" and filepath or nil -- Use nil consistently
+
+		local last_entry = self.buffer_history[#self.buffer_history]
+		if filepath == last_entry.filepath and self.mode == MODES.TREE then
+			-- We can skip
+			return
+		end
+
+    -- Filter special buffers
+    local buf_type = vim.bo[bufnr].buftype
+    local ft = vim.bo[bufnr].filetype
+
+    if buf_type ~= "" and buf_type ~= "nofile" then -- Allow normal buffers and 'nofile' buffers
+        if self.debug then vim.notify("[on_attach] Skipping buffer " .. bufnr .. " due to buftype: " .. buf_type, vim.log.levels.DEBUG) end
+        return
+    end
+    if not vim.bo[bufnr].buflisted then -- Skip unlisted buffers
+         if self.debug then vim.notify("[on_attach] Skipping unlisted buffer " .. bufnr, vim.log.levels.DEBUG) end
+         return
+    end
+    -- Add more specific filters if needed (like oil, telescope, etc.)
+    if ft == "oil" or (effective_filepath and effective_filepath:match("^oil://")) or ft:match("harpoon") or ft:match("TelescopePrompt") then
+        if self.debug then vim.notify("[on_attach] Skipping special filetype/path: " .. ft .. " / " .. (effective_filepath or ""), vim.log.levels.DEBUG) end
+        return
+    end
+
+		--- TREE MODE EARLY PRUNE ---- 
+
+		local did_prune = false
+		-- Add entry to movement history and check if we need to prune
+		if self.mode == MODES.TREE then
+			if self.is_viewing then
+				-- Check if it is in the self.buffer_history
+				self.is_viewing = false
+				for _, entry in ipairs(self.buffer_history) do
+					if filepath == entry.filepath then
+						return
+					end
+				end
+			end
+
+			local entry = {
+					bufnr = bufnr,
+					filepath = effective_filepath,
+			}
+			-- If the entry in inside the movement history, we need to update the maxlevel and set this entry's level to maxlevel
+			-- Otherwise, we need to set the level to the same as the last matching entry
+			local is_in_tree = false
+			local current_level = -1
+			for _, entry in ipairs(BUFFER_TREE_HISTORY.buffer_tree_history) do
+				if entry.Entry.bufnr == bufnr or entry.Entry.filepath == filepath then
+					is_in_tree = true
+					current_level = entry.level
+					break
+				end
+			end
+
+			if is_in_tree and current_level > BUFFER_TREE_HISTORY.max_level then
+				if DEBUG_TREE_HISTORY then vim.print("[on_attach] This should never happen! Warning, you might have found a bug! (is_in_tree and current_level > max_level), current:" .. current_level .. " max_level:" .. BUFFER_TREE_HISTORY.max_level, vim.log.levels.WARN) end
+				BUFFER_TREE_HISTORY.max_level = current_level
+			end
+
+			if is_in_tree and current_level == nil then
+				-- This should never happen
+				if DEBUG_TREE_HISTORY then vim.print("[on_attach] This should never happen! Warning, you might have found a bug! (is_in_tree and current_level == nil)", vim.log.levels.WARN) end
+				-- abort
+				return
+			end
+
+			if is_in_tree then
+				if self.debug then vim.notify("[on_attach] called not is_in_tree") end
+				-- Add to end of the object, 
+				local movement_entry = {
+					Entry = entry,
+					level = current_level,
+				}
+				table.insert(BUFFER_TREE_HISTORY.buffer_tree_history, movement_entry)
+			end
+
+			if not is_in_tree then
+				if self.debug then vim.notify("[on_attach] called not is_in_tree") end
+				-- Add to end of the object,
+				local movement_entry = {
+					Entry = entry,
+					level = BUFFER_TREE_HISTORY.max_level + 1,
+				}
+				table.insert(BUFFER_TREE_HISTORY.buffer_tree_history, movement_entry)
+				BUFFER_TREE_HISTORY.max_level = BUFFER_TREE_HISTORY.max_level + 1
+			end
+
+			if self.debug then vim.notify("BUFFER_TREE_HISTORY Before:" .. vim.inspect(BUFFER_TREE_HISTORY)) end
+
+			did_prune = BUFFER_TREE_HISTORY:prune()
+			-- if did_prune then vim.print("did prune") else vim.print("did not prune") end
+
+			if self.debug and did_prune then
+				vim.notify("BUFFER_TREE_HISTORY After prune:" .. vim.inspect(BUFFER_TREE_HISTORY))
+			end
+		end
+
+    -- Check if this buffer is already the current logical buffer in history
+    if self.current > 0 and self.current <= #self.buffer_history then
+        local current_entry = self.buffer_history[self.current]
+        if current_entry.bufnr == bufnr then
+            if self.debug then vim.notify("[on_attach] Buffer " .. bufnr .. " is already the current logical entry (" .. self.current .. "). No update.", vim.log.levels.DEBUG) end
+            return
+        end
+    end
+
+    -- --- FLAT MODE ---
+    if self.mode == MODES.FLAT then
+        if self.is_viewing then -- Reset viewing flag if we entered a buffer during navigation
+            if self.debug then vim.notify("[on_attach-Flat] Resetting is_viewing flag.", vim.log.levels.DEBUG) end
+            self.is_viewing = false
+            -- In flat mode, if viewing, the 'current' pointer might be somewhere in the middle.
+            -- Standard flat behavior often moves the visited buffer to the end unless viewing.
+            -- Decide if entering *any* buffer while viewing should move it to the end.
+            -- For now, let's assume entering a buffer *ends* viewing mode, but doesn't reorder yet.
+            -- The reordering happens if is_viewing was *false*.
+            return -- Avoid reordering just because viewing ended. Reorder happens on next non-viewing entry.
+        end
+
+        local existing_idx = nil
+        for i = #self.buffer_history, 1, -1 do -- Search backwards
+            local entry = self.buffer_history[i]
+            if entry.bufnr == bufnr or (effective_filepath and entry.filepath == effective_filepath) then
+                existing_idx = i
+                break
+            end
+        end
+
+        local entry_to_add = { bufnr = bufnr, filepath = effective_filepath }
+
+        if existing_idx then
+            -- Buffer exists, remove from old position and add to end
+            if self.debug then vim.notify("[on_attach-Flat] Buffer exists at index " .. existing_idx .. ". Moving to end.", vim.log.levels.DEBUG) end
+            table.remove(self.buffer_history, existing_idx)
+            table.insert(self.buffer_history, entry_to_add)
+        else
+            -- Buffer doesn't exist, add to end
+            if self.debug then vim.notify("[on_attach-Flat] New buffer. Adding to end.", vim.log.levels.DEBUG) end
+            table.insert(self.buffer_history, entry_to_add)
+        end
+        -- In flat mode, current always points to the end
+        self.current = #self.buffer_history
+
+        if self.debug then
+            vim.notify("[on_attach-Flat] History updated. New size: " .. #self.buffer_history .. ". Current: " .. self.current, vim.log.levels.INFO)
+            -- print("[on_attach-Flat] History: ", vim.inspect(self.buffer_history))
+        end
+
+    -- --- TREE MODE ---
+    elseif self.mode == MODES.TREE then
+
+
+			-- If we didn't prune, we need to check if the current buffer is in the history
+			--
+			--
+			-- If it is, we put it at the end
+			--
+			--
+			-- If it isn't, we need to update the buffer history object
+			-- Then we need to add it to the end -> the only way we prune is if it is a new buffer
+			--
+			-- Finally validate self
+
+			local entry = {
+				bufnr = bufnr,
+				filepath = effective_filepath,
+			}
+
+			-- if did_prune then vim.print("did prune") else vim.print("did not prune") end
+
+			if not did_prune then
+				local is_in_history = false
+				for idx, entry in ipairs(self.buffer_history) do
+					if entry.bufnr == bufnr then
+						is_in_history = true
+						break
+					end
+				end
+
+				if is_in_history then
+					if self.debug then
+						vim.notify("[on_attach-Tree] Buffer " .. bufnr .. " already in history. No update needed.", vim.log.levels.DEBUG)
+					end
+					return
+				else
+					table.insert(self.buffer_history, entry)
+					self.current = #self.buffer_history
+					if self.debug then
+						vim.notify("[on_attach-Tree] Buffer " .. bufnr .. " added to history. Current: " .. self.current, vim.log.levels.INFO)
+					end
+					return
+				end
+			else
+				-- In this case, we did prune, meaning we need to check for every buffer in self.buffer_history
+				-- If the bufferfilepath is not in the movement history, we need to remove it
+				local new_buffer_history = {}
+				-- vim.print("current buffer_history: " .. vim.inspect(self.buffer_history))
+				for _, cur_entry in ipairs(self.buffer_history) do
+
+					-- vim.print("Checking filepath: ".. cur_entry.filepath)
+
+					local is_in_movement_history_fp = false
+
+					for _, movement_entry in ipairs(BUFFER_TREE_HISTORY.buffer_tree_history) do
+						if cur_entry.filepath == movement_entry.Entry.filepath then
+							is_in_movement_history_fp = true
+						end
+					end
+
+					-- if is_in_movement_history_fp then vim.print("is valid") else vim.print("is valid") end
+
+					if is_in_movement_history_fp then
+						table.insert(new_buffer_history, cur_entry)
+					end
+				end
+				-- vim.print("final table: " .. vim.inspect(new_buffer_history))
+				self.buffer_history = new_buffer_history
+				self.current = #self.buffer_history
+
+				-- Now we know that the new buffer will never be in the self.buffer_history , but if it is, warn that there is a bug and remove it
+				local is_in_history = false
+				for idx, entry in ipairs(self.buffer_history) do
+					if entry.bufnr == bufnr then
+						is_in_history = true
+						break
+					end
+				end
+
+				if is_in_history then
+					self:validate() -- Double validate to assure that if there are any dups that they are removed.
+					self:remove_entry(bufnr)
+					if self.debug then
+						vim.notify("[on_attach-Tree] This should never happen! You might have found a bug! Buffer " .. bufnr .. " already in history. Removing it.", vim.log.levels.DEBUG)
+					end
+				end
+
+				-- Now we can add the new buffer to the end
+				table.insert(self.buffer_history, entry)
+				self.current = #self.buffer_history
+			end
+    end -- End Tree Mode
+
+    -- Optional: Validate after updates, can be expensive
+    self:validate()
+		self.current = #self.buffer_history
 end
 
 function M:save_history()
@@ -232,13 +650,13 @@ function M:save_history()
 
 				table.insert(valid_entries, {
 					bufnr = bufnr,
-					filepath = filepath ~= "" and filepath or nil
+					filepath = filepath ~= "" and filepath or nil,
 				})
 			elseif filepath and filepath ~= "" and vim.fn.filereadable(filepath) == 1 then
 				-- Keep entry if file exists even if buffer doesn't
 				table.insert(valid_entries, {
 					bufnr = nil,  -- Buffer no longer exists
-					filepath = filepath
+					filepath = filepath,
 				})
 			end
 		end
@@ -246,7 +664,7 @@ function M:save_history()
 		local json = vim.json.encode(valid_entries)
 		file:write(json)
 		file:close()
-		-- vim.notify("Buffer history saved to " .. file_path)
+		-- vim.notify("Buffer history saved to " .. file_path, vim.log.levels.INFO)
 	else
 		vim.notify("Error saving buffer history to " .. file_path, vim.log.levels.ERROR)
 	end
@@ -269,8 +687,7 @@ function M:display_buffers()
 	end
 
 	-- Process entries in reverse order (newest first)
-	for idx = #self.buffer_history, 1, -1 do
-		local entry = self.buffer_history[idx]
+	for idx, entry in ipairs(self.buffer_history) do
 		local bufnr = entry.bufnr
 		local filepath = entry.filepath
 		local display_name
@@ -282,17 +699,17 @@ function M:display_buffers()
 			-- Use buffer info for display
 			local name = vim.api.nvim_buf_get_name(bufnr)
 			if name == "" then
-				display_name = (#self.buffer_history - idx + 1) .. ": " .. bufnr .. " - [Unnamed buffer]"
+				display_name = (idx) .. ": " .. bufnr .. " - [Unnamed buffer]"
 			else
-				display_name = (#self.buffer_history - idx + 1) .. ": " .. bufnr .. " - " .. vim.fn.fnamemodify(name, ":~:.")
+				display_name = (idx) .. ": " .. bufnr .. " - " .. vim.fn.fnamemodify(name, ":~:.")
 			end
 		elseif filepath and filepath ~= "" then
 			-- Use filepath for display (buffer doesn't exist yet)
-			display_name = (#self.buffer_history - idx + 1) .. ": ⟳ " .. vim.fn.fnamemodify(filepath, ":~:.")
+			display_name = (idx) .. ": ⟳ " .. vim.fn.fnamemodify(filepath, ":~:.")
 
 			-- Try to find if file exists
 			if vim.fn.filereadable(filepath) ~= 1 then
-				display_name = (#self.buffer_history - idx + 1) .. ": ! " .. display_name -- Mark files that don't exist
+				display_name = (idx) .. ": ! " .. display_name -- Mark files that don't exist
 			end
 		else
 			-- Skip completely invalid entries
@@ -307,9 +724,6 @@ function M:display_buffers()
 			ordinal = display_name
 		})
 
-		if self.debug then
-			vim.notify("Display entries: " .. vim.inspect(buffer_entries))
-		end
 
 		::continue::
 	end
@@ -417,19 +831,38 @@ function M:display_buffers()
 				vim.notify("Selected buffer is no longer valid", vim.log.levels.WARN)
 			end)
 
-			-- Delete buffer from history on <c-d>
-			map("i", "<c-d>", function()
+			map("i", "<c-w>", function()
+				-- This is a debug that just displays the selected entry
+
 				local selection = action_state.get_selected_entry()
 
+				vim.notify("Selected entry: " .. vim.inspect(selection), vim.log.levels.INFO)
+				vim.notify("Current bufferHistory: " .. vim.inspect(self.buffer_history), vim.log.levels.INFO)
+
+			end)
+			-- Delete buffer from history on <c-d>
+			map("i", "<c-d>", function()
+
+				local selection = action_state.get_selected_entry()
+
+				local real_index = selection.index
+
 				if self.debug then
-					vim.notify("Deleting entry: " .. vim.inspect(selection))
+					vim.notify("Buffer history before: " .. vim.inspect(self.buffer_history))
+					vim.notify("Buffer index selected: " .. vim.inspect(real_index))
 				end
 
-				-- Remove the entry from history
-				table.remove(self.buffer_history, selection.index)
+				local success = self:remove_entry(selection.bufnr, selection.filepath)
+
+				if not success and self.debug then
+					vim.notify("Failed to remove entry from buffer history", vim.log.levels.WARN)
+					return
+				elseif success and self.debug then
+					vim.notify("Removed entry from buffer history", vim.log.levels.INFO)
+				end
 
 				-- Update current pointer if needed
-				if self.current >= selection.index then
+				if self.current >= real_index then
 					self.current = math.max(1, self.current - 1)
 				end
 
@@ -485,7 +918,7 @@ function M:display_buffers()
 					}), { reset_prompt = false })
 
 					-- Notify user
-					vim.notify("Item moved to front of history")
+					vim.notify("Item moved to back of history")
 				end
 			end)
 
@@ -573,10 +1006,9 @@ end
 -- Helper method to get updated buffer entries after deletion
 function M:_get_updated_buffer_entries()
 	local buffer_entries = {}
-	
+
 	-- Process entries in reverse order (newest first) to match the display_buffers function
-	for idx = #self.buffer_history, 1, -1 do
-		local entry = self.buffer_history[idx]
+	for idx, entry in ipairs(self.buffer_history) do
 		local bufnr = entry.bufnr
 		local filepath = entry.filepath
 
@@ -588,17 +1020,17 @@ function M:_get_updated_buffer_entries()
 			-- Use buffer info for display
 			local name = vim.api.nvim_buf_get_name(bufnr)
 			if name == "" then
-				display_name = (#self.buffer_history - idx + 1) .. ": " .. bufnr .. " - [Unnamed buffer]"
+				display_name = (idx) .. ": " .. bufnr .. " - [Unnamed buffer]"
 			else
-				display_name = (#self.buffer_history - idx + 1) .. ": " .. bufnr .. " - " .. vim.fn.fnamemodify(name, ":~:.")
+				display_name = (idx) .. ": " .. bufnr .. " - " .. vim.fn.fnamemodify(name, ":~:.")
 			end
 		elseif filepath and filepath ~= "" then
 			-- Use filepath for display (buffer doesn't exist yet)
-			display_name = (#self.buffer_history - idx + 1) .. ": ⟳ " .. vim.fn.fnamemodify(filepath, ":~:.")
+			display_name = (idx) .. ": ⟳ " .. vim.fn.fnamemodify(filepath, ":~:.")
 
 			-- Try to find if file exists
 			if vim.fn.filereadable(filepath) ~= 1 then
-				display_name = (#self.buffer_history - idx + 1) .. ": ! " .. display_name
+				display_name = (idx) .. ": ! " .. display_name
 			end
 		else
 			-- Skip invalid entries
@@ -615,7 +1047,7 @@ function M:_get_updated_buffer_entries()
 
 		::continue::
 	end
-	
+
 	return buffer_entries
 end
 
@@ -656,6 +1088,10 @@ function M:move_to_back(target_bufnr, target_filepath)
 		target_bufnr = vim.api.nvim_get_current_buf()
 	end
 
+
+	if self.debug then
+		vim.notify("Buffer history before: " .. vim.inspect(self.buffer_history))
+	end
 	-- Find buffer in history
 	for i, entry in ipairs(self.buffer_history) do
 		-- Match by buffer number if provided
@@ -712,7 +1148,7 @@ end
 --- @param target_filepath? string Optional filepath to move to front
 function M:move_to_front(target_bufnr, target_filepath)
 	-- Default to current buffer if no parameters provided
-	if not target_bufnr and not target_filepath then
+	if not target_bufnr or not target_filepath then
 		target_bufnr = vim.api.nvim_get_current_buf()
 	end
 
@@ -756,30 +1192,46 @@ function M:move_to_front(target_bufnr, target_filepath)
 	return false
 end
 
+---@param self bufferHistory
+---@param index number User-facing index (1 = most recent in display)
 function M:go_to_index(index)
-	self.is_viewing = true
-	local entry = self:get_buffer_at_index(index)
+    -- Convert user index (1=newest) to internal history index (1=oldest)
+    local internal_index = #self.buffer_history - index + 1
 
-	if not entry then
-		vim.notify("No buffer found at index " .. index)
-		return
-	end
+    if internal_index < 1 or internal_index > #self.buffer_history then
+        vim.notify("Invalid history index: " .. index, vim.log.levels.WARN)
+        return
+    end
 
-	if entry.bufnr and vim.api.nvim_buf_is_valid(entry.bufnr) then
-		-- Buffer exists, switch to it
-		vim.api.nvim_set_current_buf(entry.bufnr)
-	elseif entry.filepath and vim.fn.filereadable(entry.filepath) == 1 then
-		-- Buffer doesn't exist but file does, open it
-		vim.cmd("edit " .. vim.fn.fnameescape(entry.filepath))
+    self.is_viewing = true -- Set viewing flag
+    local target_entry = self.buffer_history[internal_index]
 
-		-- Update buffer number in history
-		entry.bufnr = vim.api.nvim_get_current_buf()
-	else
-		vim.notify("Buffer no longer exists: " ..
-		(entry.filepath or "unknown"), vim.log.levels.WARN)
-	end
+    if not target_entry then
+        if self.debug then vim.notify("[go_to_index] Error: No entry found at internal index " .. internal_index, vim.log.levels.WARN) end
+        self.is_viewing = false
+        return
+    end
+
+     if self.debug then vim.notify("[go_to_index] Attempting to navigate to user index " .. index .. " (internal ".. internal_index .."): bufnr=" .. (target_entry.bufnr or "nil"), vim.log.levels.INFO) end
+
+    local switched = false
+    if target_entry.bufnr and vim.api.nvim_buf_is_valid(target_entry.bufnr) then
+        vim.api.nvim_set_current_buf(target_entry.bufnr)
+        switched = true
+    elseif target_entry.filepath and vim.fn.filereadable(target_entry.filepath) == 1 then
+        vim.cmd("edit " .. vim.fn.fnameescape(target_entry.filepath))
+        target_entry.bufnr = vim.api.nvim_get_current_buf()
+        switched = true
+    else
+        vim.notify("Target buffer/file no longer exists: " .. (target_entry.filepath or ("bufnr " .. (target_entry.bufnr or "?"))), vim.log.levels.WARN)
+        self.is_viewing = false
+    end
+
+    if switched then
+        self.current = internal_index -- Update current pointer
+        if self.debug then vim.notify("[go_to_index] Successfully switched buffer. Current set to: " .. self.current, vim.log.levels.INFO) end
+    end
 end
-
 
 function M:load_history()
 	-- Load object history from a file in the data directory
@@ -816,7 +1268,7 @@ function M:load_history()
 					local filepath = vim.api.nvim_buf_get_name(bufnr)
 					table.insert(self.buffer_history, {
 						bufnr = bufnr,
-						filepath = filepath ~= "" and filepath or nil
+						filepath = filepath ~= "" and filepath or nil,
 					})
 				end
 			else
@@ -833,7 +1285,7 @@ function M:load_history()
 						if vim.api.nvim_buf_is_valid(b) and vim.api.nvim_buf_get_name(b) == filepath then
 							table.insert(self.buffer_history, {
 								bufnr = b,
-								filepath = filepath
+								filepath = filepath,
 							})
 							found = true
 							break
@@ -844,14 +1296,14 @@ function M:load_history()
 					if not found then
 						table.insert(self.buffer_history, {
 							bufnr = nil,
-							filepath = filepath
+							filepath = filepath,
 						})
 					end
 				elseif bufnr and vim.api.nvim_buf_is_valid(bufnr) then
 					-- If only buffer number exists and is valid
 					table.insert(self.buffer_history, {
 						bufnr = bufnr,
-						filepath = vim.api.nvim_buf_get_name(bufnr)
+						filepath = vim.api.nvim_buf_get_name(bufnr),
 					})
 				end
 			end
@@ -891,64 +1343,119 @@ function M:get_previous_buffer()
 	end
 end
 
+-- Other functions (save_history, display_buffers, _get_updated_buffer_entries,
+-- get_buffer_at_index, move_to_back, move_to_front, go_to_index, load_history,
+-- get_previous_buffer, go_to_previous_buffer, go_to_next_buffer, setup)
+-- remain largely the same, but ensure they use `self.current` consistently
+-- and handle potential errors (like invalid buffers during navigation).
+-- Make sure navigation functions (`go_to_previous`, `go_to_next`, `go_to_index`)
+-- set `self.is_viewing = true` *before* changing the buffer.
+
+-- Example adjustment in navigation functions:
+---@param self bufferHistory
 function M:go_to_previous_buffer()
-	self.is_viewing = true
-	local prev_entry = self:get_previous_buffer()
+    if self.current <= 1 then
+         --if self.debug then 
+				 vim.notify("[go_to_previous] Already at start.", vim.log.levels.INFO) 
+				 --end
+         return
+    end
 
-	if not prev_entry then
-		vim.notify("No previous buffer found. current_index: " .. self.current)
-		return
-	end
+    self.is_viewing = true -- Set viewing flag BEFORE potential buffer switch
+    local target_index = self.current - 1
+    local prev_entry = self.buffer_history[target_index]
 
-	if prev_entry.bufnr and vim.api.nvim_buf_is_valid(prev_entry.bufnr) then
-		-- Buffer exists, switch to it
-		vim.api.nvim_set_current_buf(prev_entry.bufnr)
-	elseif prev_entry.filepath and vim.fn.filereadable(prev_entry.filepath) == 1 then
-		-- Buffer doesn't exist but file does, open it
-		vim.cmd("edit " .. vim.fn.fnameescape(prev_entry.filepath))
+    if not prev_entry then -- Should not happen if current > 1, but safety check
+        --if self.debug then 
+				vim.notify("[go_to_previous] Error: No entry found at index " .. target_index, vim.log.levels.WARN) 
+				--end
+        self.is_viewing = false -- Reset flag if error occurs
+        return
+    end
 
-		-- Update buffer number in history
-		prev_entry.bufnr = vim.api.nvim_get_current_buf()
-	else
-		vim.notify("Previous buffer no longer exists: " ..
-		(prev_entry.filepath or "unknown"), vim.log.levels.WARN)
+    if self.debug then vim.notify("[go_to_previous] Attempting to navigate to index " .. target_index .. ": bufnr=" .. (prev_entry.bufnr or "nil"), vim.log.levels.INFO) end
 
-		-- Skip to next previous buffer
-		self:go_to_previous_buffer()
-	end
+    -- Logic to switch buffer (handle invalid/load file)
+    local switched = false
+    if prev_entry.bufnr and vim.api.nvim_buf_is_valid(prev_entry.bufnr) then
+        vim.api.nvim_set_current_buf(prev_entry.bufnr)
+        switched = true
+    elseif prev_entry.filepath and vim.fn.filereadable(prev_entry.filepath) == 1 then
+        vim.cmd("edit " .. vim.fn.fnameescape(prev_entry.filepath))
+        -- Update entry with the new buffer number AFTER switching
+        prev_entry.bufnr = vim.api.nvim_get_current_buf()
+        switched = true
+    else
+        vim.notify("Previous buffer/file no longer exists: " .. (prev_entry.filepath or ("bufnr " .. (prev_entry.bufnr or "?"))), vim.log.levels.WARN)
+        -- Optional: Remove invalid entry here?
+        -- table.remove(self.buffer_history, target_index)
+        -- Need to decide how to handle current pointer if removed
+        self.is_viewing = false -- Reset flag as navigation failed
+    end
+
+    -- IMPORTANT: Update current pointer only AFTER successful switch attempt
+    -- BufEnter (on_attach) will handle the state based on where we landed.
+    -- We set `is_viewing` true; `on_attach` will see that and either just update `current`
+    -- if we landed on target_index + 1 (forward nav check in TREE) or reset `is_viewing` otherwise.
+    -- The crucial part is that the navigation functions themselves *should not* directly manipulate the history list order. They just change the buffer.
+    -- Let's revise: The navigation functions *should* update `self.current` directly because `on_attach` relies on it being correct *before* it runs.
+
+    if switched then
+         self.current = target_index -- Update current pointer because we initiated the navigation
+         if self.debug then vim.notify("[go_to_previous] Successfully switched buffer. Current set to: " .. self.current, vim.log.levels.INFO) end
+    end
+
+    -- No need to recursively call itself on failure here, let user try again.
 end
 
+---@param self bufferHistory
 function M:go_to_next_buffer()
-	self.is_viewing = true
-	if self.current < #self.buffer_history then
-		self.current = self.current + 1
-		local entry = self.buffer_history[self.current]
+     if self.current >= #self.buffer_history then
+          if self.debug then vim.notify("[go_to_next] Already at end.", vim.log.levels.INFO) end
+          return
+     end
 
-		if entry.bufnr and vim.api.nvim_buf_is_valid(entry.bufnr) then
-			-- Buffer exists, switch to it
-			vim.api.nvim_set_current_buf(entry.bufnr)
-		elseif entry.filepath and vim.fn.filereadable(entry.filepath) == 1 then
-			-- Buffer doesn't exist but file does, open it
-			vim.cmd("edit " .. vim.fn.fnameescape(entry.filepath))
+     self.is_viewing = true -- Set viewing flag
+     local target_index = self.current + 1
+     local next_entry = self.buffer_history[target_index]
 
-			-- Update buffer number in history
-			entry.bufnr = vim.api.nvim_get_current_buf()
-		else
-			vim.notify("Next buffer no longer exists: " ..
-			(entry.filepath or "unknown"), vim.log.levels.WARN)
+     if not next_entry then
+          if self.debug then vim.notify("[go_to_next] Error: No entry found at index " .. target_index, vim.log.levels.WARN) end
+          self.is_viewing = false
+          return
+     end
 
-			-- Skip to next buffer
-			self:go_to_next_buffer()
-		end
-	else
-		vim.notify("No next buffer found.")
-	end
+     if self.debug then vim.notify("[go_to_next] Attempting to navigate to index " .. target_index .. ": bufnr=" .. (next_entry.bufnr or "nil"), vim.log.levels.INFO) end
+
+     local switched = false
+     if next_entry.bufnr and vim.api.nvim_buf_is_valid(next_entry.bufnr) then
+         vim.api.nvim_set_current_buf(next_entry.bufnr)
+         switched = true
+     elseif next_entry.filepath and vim.fn.filereadable(next_entry.filepath) == 1 then
+         vim.cmd("edit " .. vim.fn.fnameescape(next_entry.filepath))
+         next_entry.bufnr = vim.api.nvim_get_current_buf()
+         switched = true
+     else
+         vim.notify("Next buffer/file no longer exists: " .. (next_entry.filepath or ("bufnr " .. (next_entry.bufnr or "?"))), vim.log.levels.WARN)
+         self.is_viewing = false
+     end
+
+     if switched then
+          self.current = target_index -- Update current pointer
+          if self.debug then vim.notify("[go_to_next] Successfully switched buffer. Current set to: " .. self.current, vim.log.levels.INFO) end
+     end
 end
 
+---@class Options
+---@field debug boolean Enable debug mode
+---@field mode MODES Mode of operation (e.g., "TREE", "FLAT")
+
+---@param opts Options
 function M.setup(opts)
 	opts = opts or {}
 	local debug = opts.debug or false
-	local buffer_history = M.new(debug)
+	local mode = opts.mode or MODES.TREE
+	local buffer_history = M.new(mode, debug)
 
 	-- Load history before performing any operations
 

@@ -6,7 +6,6 @@ local M = {}
 
 function M.set_dvorak_map(self)
 
-
 -- Part 1 Basic remaps:
 --
 -- zx -> () done
@@ -54,103 +53,103 @@ function M.set_dvorak_map(self)
 --
 --
 
-
 	self.map = {
 		-- Lowercase letters
 		-- {'i', 'a',      "'", {noremap = true}},
-		{'i', 'b',      "x", {noremap = true}},
-		{'i', 'c',      "j", {noremap = true}},
-		{'i', 'd',      "e", {noremap = true}},
-		{'i', 'e',      ".", {noremap = true}},
-		{'i', 'f',      "u", {noremap = true}},
-		{'i', 'g',      "i", {noremap = true}},
-		{'i', 'h',      "d", {noremap = true}},
-		{'i', 'i',      "c", {noremap = true}},
-		{'i', 'j',      "h", {noremap = true}},
-		{'i', 'k',      "t", {noremap = true}},
-		{'i', 'l',      "n", {noremap = true}},
-		{'i', 'm',      "m", {noremap = true}},
-		{'i', 'n',      "b", {noremap = true}},
-		{'i', 'o',      "r", {noremap = true}},
-		{'i', 'p',      "l", {noremap = true}},
-		{'i', 'q',      "'", {noremap = true}},
-		{'i', 'r',      "p", {noremap = true}},
-		{'i', 's',      "o", {noremap = true}},
-		{'i', 't',      "y", {noremap = true}},
-		{'i', 'u',      "g", {noremap = true}},
-		{'i', 'v',      "k", {noremap = true}},
-		{'i', 'w',      ",", {noremap = true}},
-		{'i', 'x',      "q", {noremap = true}},
-		{'i', 'y',      "f", {noremap = true}},
-		{'i', 'z',      ";", {noremap = true}},
+		{'n', 'b',      "x", {noremap = true}},
+		{'n', 'c',      "j", {noremap = true}},
+		{'n', 'd',      "e", {noremap = true}},
+		{'n', 'e',      ".", {noremap = true}},
+		{'n', 'f',      "u", {noremap = true}},
+		{'n', 'g',      "i", {noremap = true}},
+		{'n', 'h',      "d", {noremap = true}},
+		{'n', 'i',      "c", {noremap = true}},
+		{'n', 'j',      "h", {noremap = true}},
+		{'n', 'k',      "t", {noremap = true}},
+		{'n', 'l',      "n", {noremap = true}},
+		{'n', 'm',      "m", {noremap = true}},
+		{'n', 'n',      "b", {noremap = true}},
+		{'n', 'o',      "r", {noremap = true}},
+		{'n', 'p',      "l", {noremap = true}},
+		{'n', 'q',      "'", {noremap = true}},
+		{'n', 'r',      "p", {noremap = true}},
+		{'n', 's',      "o", {noremap = true}},
+		{'n', 't',      "y", {noremap = true}},
+		{'n', 'u',      "g", {noremap = true}},
+		{'n', 'v',      "k", {noremap = true}},
+		{'n', 'w',      ",", {noremap = true}},
+		{'n', 'x',      "q", {noremap = true}},
+		{'n', 'y',      "f", {noremap = true}},
+		{'n', 'z',      ";", {noremap = true}},
 
 		-- Uppercase letters (shift variants)
 		-- {'i', 'A',      "\"", {noremap = true}},
-		{'i', 'B',      "X", {noremap = true}},
-		{'i', 'C',      "J", {noremap = true}},
-		{'i', 'D',      "E", {noremap = true}},
-		{'i', 'E',      ">", {noremap = true}},
-		{'i', 'F',      "U", {noremap = true}},
-		{'i', 'G',      "I", {noremap = true}},
-		{'i', 'H',      "D", {noremap = true}},
-		{'i', 'I',      "C", {noremap = true}},
-		{'i', 'J',      "H", {noremap = true}},
-		{'i', 'K',      "T", {noremap = true}},
-		{'i', 'L',      "N", {noremap = true}},
-		{'i', 'M',      "M", {noremap = true}},
-		{'i', 'N',      "B", {noremap = true}},
-		{'i', 'O',      "R", {noremap = true}},
-		{'i', 'P',      "L", {noremap = true}},
-		{'i', 'Q',      "\"", {noremap = true}},
-		{'i', 'R',      "P", {noremap = true}},
-		{'i', 'S',      "O", {noremap = true}},
-		{'i', 'T',      "Y", {noremap = true}},
-		{'i', 'U',      "G", {noremap = true}},
-		{'i', 'V',      "K", {noremap = true}},
-		{'i', 'W',      "<", {noremap = true}},
-		{'i', 'X',      "Q", {noremap = true}},
-		{'i', 'Y',      "F", {noremap = true}},
-		{'i', 'Z',      ":", {noremap = true}},
+		{'n', 'B',      "X", {noremap = true}},
+		{'n', 'C',      "J", {noremap = true}},
+		{'n', 'D',      "E", {noremap = true}},
+		{'n', 'E',      ">", {noremap = true}},
+		{'n', 'F',      "U", {noremap = true}},
+		{'n', 'G',      "I", {noremap = true}},
+		{'n', 'H',      "D", {noremap = true}},
+		{'n', 'I',      "C", {noremap = true}},
+		{'n', 'J',      "H", {noremap = true}},
+		{'n', 'K',      "T", {noremap = true}},
+		{'n', 'L',      "N", {noremap = true}},
+		{'n', 'M',      "M", {noremap = true}},
+		{'n', 'N',      "B", {noremap = true}},
+		{'n', 'O',      "R", {noremap = true}},
+		{'n', 'P',      "L", {noremap = true}},
+		{'n', 'Q',      "\"", {noremap = true}},
+		{'n', 'R',      "P", {noremap = true}},
+		{'n', 'S',      "O", {noremap = true}},
+		{'n', 'T',      "Y", {noremap = true}},
+		{'n', 'U',      "G", {noremap = true}},
+		{'n', 'V',      "K", {noremap = true}},
+		{'n', 'W',      "<", {noremap = true}},
+		{'n', 'X',      "Q", {noremap = true}},
+		{'n', 'Y',      "F", {noremap = true}},
+		{'n', 'Z',      ":", {noremap = true}},
 
 		-- Special character mappings
-		{'i', '[',      "/", {noremap = true}},
-		{'i', ']',      "=", {noremap = true}},
-		{'i', '{',      "?", {noremap = true}},  -- Shift variant of [
-		{'i', '}',      "+", {noremap = true}},  -- Shift variant of ]
-		{'i', ';',      "s", {noremap = true}},
-		{'i', ':',      "S", {noremap = true}},  -- Shift variant of ;
-		{'i', "'",      "-", {noremap = true}},
-		{'i', '"',      "_", {noremap = true}},  -- Shift variant of '
-		{'i', ',',      "w", {noremap = true}},
-		{'i', '<',      "W", {noremap = true}},  -- Shift variant of ,
-		{'i', '.',      "v", {noremap = true}},
-		{'i', '>',      "V", {noremap = true}},  -- Shift variant of .
-		{'i', '/',      "z", {noremap = true}},
-		{'i', '?',      "Z", {noremap = true}},  -- Shift variant of /
-		{'i', '-',      "[", {noremap = true}},
-		{'i', '_',      "{", {noremap = true}},  -- Shift variant of -
-		{'i', '=',      "]", {noremap = true}},
-		{'i', '+',      "}", {noremap = true}},  -- Shift variant of =
-		{'i', '1',      "1", {noremap = true}},
-		{'i', '!',      "!", {noremap = true}},  -- Shift variant of 1
-		{'i', '2',      "2", {noremap = true}},
-		{'i', '@',      "@", {noremap = true}},  -- Shift variant of 2
-		{'i', '3',      "3", {noremap = true}},
-		{'i', '#',      "#", {noremap = true}},  -- Shift variant of 3
-		{'i', '4',      "4", {noremap = true}},
-		{'i', '$',      "$", {noremap = true}},  -- Shift variant of 4
-		{'i', '5',      "5", {noremap = true}},
-		{'i', '%',      "%", {noremap = true}},  -- Shift variant of 5
-		{'i', '6',      "6", {noremap = true}},
-		{'i', '^',      "^", {noremap = true}},  -- Shift variant of 6
-		{'i', '7',      "7", {noremap = true}},
-		{'i', '&',      "&", {noremap = true}},  -- Shift variant of 7
-		{'i', '8',      "8", {noremap = true}},
-		{'i', '*',      "*", {noremap = true}},  -- Shift variant of 8
-		{'i', '9',      "9", {noremap = true}},
-		{'i', '(',      "(", {noremap = true}},  -- Shift variant of 9
-		{'i', '0',      "0", {noremap = true}},
-		{'i', ')',      ")", {noremap = true}},  -- Shift variant of 0	}
+		-- We dont use this anymore
+	-- 	{'i', '[',      "/", {noremap = true}},
+	-- 	{'i', ']',      "=", {noremap = true}},
+	-- 	{'i', '{',      "?", {noremap = true}},  -- Shift variant of [
+	-- 	{'i', '}',      "+", {noremap = true}},  -- Shift variant of ]
+	-- 	{'i', ';',      "s", {noremap = true}},
+	-- 	{'i', ':',      "S", {noremap = true}},  -- Shift variant of ;
+	-- 	{'i', "'",      "-", {noremap = true}},
+	-- 	{'i', '"',      "_", {noremap = true}},  -- Shift variant of '
+	-- 	{'i', ',',      "w", {noremap = true}},
+	-- 	{'i', '<',      "W", {noremap = true}},  -- Shift variant of ,
+	-- 	{'i', '.',      "v", {noremap = true}},
+	-- 	{'i', '>',      "V", {noremap = true}},  -- Shift variant of .
+	-- 	{'i', '/',      "z", {noremap = true}},
+	-- 	{'i', '?',      "Z", {noremap = true}},  -- Shift variant of /
+	-- 	{'i', '-',      "[", {noremap = true}},
+	-- 	{'i', '_',      "{", {noremap = true}},  -- Shift variant of -
+	-- 	{'i', '=',      "]", {noremap = true}},
+	-- 	{'i', '+',      "}", {noremap = true}},  -- Shift variant of =
+	-- 	{'i', '1',      "1", {noremap = true}},
+	-- 	{'i', '!',      "!", {noremap = true}},  -- Shift variant of 1
+	-- 	{'i', '2',      "2", {noremap = true}},
+	-- 	{'i', '@',      "@", {noremap = true}},  -- Shift variant of 2
+	-- 	{'i', '3',      "3", {noremap = true}},
+	-- 	{'i', '#',      "#", {noremap = true}},  -- Shift variant of 3
+	-- 	{'i', '4',      "4", {noremap = true}},
+	-- 	{'i', '$',      "$", {noremap = true}},  -- Shift variant of 4
+	-- 	{'i', '5',      "5", {noremap = true}},
+	-- 	{'i', '%',      "%", {noremap = true}},  -- Shift variant of 5
+	-- 	{'i', '6',      "6", {noremap = true}},
+	-- 	{'i', '^',      "^", {noremap = true}},  -- Shift variant of 6
+	-- 	{'i', '7',      "7", {noremap = true}},
+	-- 	{'i', '&',      "&", {noremap = true}},  -- Shift variant of 7
+	-- 	{'i', '8',      "8", {noremap = true}},
+	-- 	{'i', '*',      "*", {noremap = true}},  -- Shift variant of 8
+	-- 	{'i', '9',      "9", {noremap = true}},
+	-- 	{'i', '(',      "(", {noremap = true}},  -- Shift variant of 9
+	-- 	{'i', '0',      "0", {noremap = true}},
+	-- 	{'i', ')',      ")", {noremap = true}},  -- Shift variant of 0	}
 	}
 
 	-- no idea why this needs an empty string but do not trust changing it

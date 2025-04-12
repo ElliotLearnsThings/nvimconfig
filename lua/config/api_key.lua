@@ -11,7 +11,7 @@ local function get_env_data()
 		env_data = file:read("*a")
 		file:close()
 	else
-		vim.notify("COULD NOT FIND ANTHROPIC KEY", vim.log.levels.INFO)
+		-- vim.notify("COULD NOT FIND ANTHROPIC KEY", vim.log.levels.INFO)
 	end
 	-- print too
 	local key = trim(env_data:gsub("\r", ""))

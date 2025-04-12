@@ -3,6 +3,7 @@ require("config.dap_config")
 
 require("config.buf_switch").setup({
 	debug = false,
+	mode = "tree",
 })
 
 -- Renam variable config
@@ -63,8 +64,8 @@ require("config.treesitter_config")
 -- Lua line
 --- require("config.lua_line_config")
 
---- Null ls
-require("config.null_ls_config")
+--- None ls
+require("config.none_ls_config")
 
 -- Colors
 require("config.colors_config")
@@ -72,11 +73,11 @@ require("config.colors_config")
 --- Neogit config
 require("config.neogit_config")
 
-
 -- window config
 require("config.window_config")
 
 vim.opt.clipboard:append { 'unnamedplus' }
+--vim.opt.clipboard = ""
 
 -- Harpoon config
 

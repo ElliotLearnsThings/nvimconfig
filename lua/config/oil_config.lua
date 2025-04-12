@@ -1,11 +1,9 @@
 -- Oil config
 
 -- Add this to make oil open in a floating window by default
-
 local oil = require("oil")
 
 -- Oil config
-
 --- vim.keymap.set("n", "-", "<CMD>Oil<CR>", { desc = "Open parent directory" })
 
 local oil = require("oil")
