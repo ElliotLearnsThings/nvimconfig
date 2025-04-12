@@ -88,8 +88,18 @@ end
 function BufferEntryValidator:check_disallowed_buffers()
 	-- Check to see if the filepath is an invalid buffer
 	-- Filter special buffers
-	local buf_type = vim.bo[self.bufnr].buftype
-	local ft = vim.bo[self.bufnr].filetype
+
+	local buf_type
+	local ft
+
+	if pcall(function () local _ = vim.bo[self.bufnr] end) then
+		buf_type = vim.bo[self.bufnr].buftype
+		ft = vim.bo[self.bufnr].filetype
+	else
+		buf_type = ""
+		ft = "nofile" -- Invalidate if the buffer number is invalid
+	end
+
 
 	if buf_type == "nofile" then -- Allow normal buffers and 'nofile' buffers
 		return true
@@ -101,7 +111,6 @@ function BufferEntryValidator:check_disallowed_buffers()
 
 	-- Add more specific filters if needed (like oil, telescope, etc.)
 	if ft == "oil" or (self.filepath and self.filepath:match("^oil://")) or ft:match("harpoon") or ft:match("TelescopePrompt") then
-		if self.debug then vim.notify"bad match" end
 		return true
 	end
 	return false
@@ -144,7 +153,7 @@ function BufferHistoryValidator:validate()
 		self.utils.remove(self, nil, nil, idx)
 	end
 
-	local idxs_is_valid
+	-- local idxs_is_valid
 
 	-- Find invalid
 	-- for idx, entry in ipairs(self.history) do
