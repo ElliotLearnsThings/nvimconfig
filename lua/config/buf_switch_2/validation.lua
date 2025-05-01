@@ -170,7 +170,9 @@ function BufferHistoryValidator:validate()
 	--end
 
 	assert(self.current_index >= 0)
-	assert(self.current_index <= #self.history)
+	if self.current_index > #self.history then
+		self.current_index = #self.history
+	end
 end
 
 return {

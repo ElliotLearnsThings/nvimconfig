@@ -81,6 +81,11 @@ function Mover:go_back(amount)
 	assert((new_index > 0) and (new_index <= #self.history))
 	assert(new_index < self.current_index)
 
+	if self.is_outside then
+		self.is_outside = false
+		new_index = new_index + 1
+	end
+
 	local last_entry = self.history[new_index]
 	local is_valid = last_entry.validator.validate(last_entry, self)
 

@@ -27,7 +27,7 @@ require("config.git_signs_config")
 -- Lsp config
 require("config.lsp_config")
 
-vim.env.RUST_ANALYZER_MEMORY_LIMIT = "2048"  -- Set memory limit in MB
+-- vim.env.RUST_ANALYZER_MEMORY_LIMIT = "2048"  -- Set memory limit in MB
 
 -- Terminal 
 -- Remove relative line numbers in terminal
@@ -69,6 +69,7 @@ require("config.none_ls_config")
 -- Colors
 require("config.colors_config")
 
+
 --- Neogit config
 require("config.neogit_config")
 
@@ -86,11 +87,10 @@ vim.opt.clipboard:append { 'unnamedplus' }
 require("config.oil_config")
 
 -- UndoTree git config
-vim.keymap.set("n", "<leader>u", vim.cmd.UndotreeToggle)
+-- vim.keymap.set("n", "<leader>u", vim.cmd.UndotreeToggle)
+-- vim.g.undotree_WindowLayout = 2
 
 vim.o.undofile = true
-vim.g.undotree_WindowLayout = 2
-
 
 -- Function to replace occurrences of the first string with the second string in a given range
 function ReplaceInRange(from, to)
@@ -114,8 +114,6 @@ vim.keymap.set('n', '<leader><Tab>', 'copilot#Accept("\\<CR>")', {
 	replace_keycodes = false
 })
 
--- Old config stuff
-vim.g.mapleader = " "
 
 -- Telescope 
 
@@ -163,11 +161,6 @@ vim.keymap.set('n', '<leader>td', function()
 	end
 end, { desc = "Toggle diagnostic visibility" })
 
-function LineNumberColors()
-	vim.api.nvim_set_hl(0, 'LineNrAbove', { fg='#51B3EC', bold=true })
-	vim.api.nvim_set_hl(0, 'LineNr', { fg='white', bold=true })
-	vim.api.nvim_set_hl(0, 'LineNrBelow', { fg='#FB508F', bold=true })
-end
 
 -- Function to set a mark with <C-g> in normal mode, or go to mark if mark is set
 vim.keymap.set('n', 'm', '<Nop>', { noremap = true })
@@ -221,6 +214,8 @@ end, { noremap = true })
 
 vim.keymap.set('n', '<C-x>', '<C-v>', { noremap = true, desc = "Visual block mode" })
 
+-- Old config stuff
+vim.g.mapleader = " "
 
 -- Swap "c" with "d" in normal mode
 -- vim.keymap.set('n', 'd', 'c', {noremap = true})
@@ -236,32 +231,25 @@ vim.keymap.set('n', '<C-x>', '<C-v>', { noremap = true, desc = "Visual block mod
 --
 -- tmux config
 
-
-vim.opt.termguicolors = true
-
-
-LineNumberColors()
-
-
 -- Tab config
 local tab = require("config.tab_config")
-vim.keymap.set("n", "<leader>1", function() tab.set_tab(1) end, { desc = "Go to tab 1" })
-vim.keymap.set("n", "<leader>2", function() tab.set_tab(2) end, { desc = "Go to tab 2" })
-vim.keymap.set("n", "<leader>3", function() tab.set_tab(3) end, { desc = "Go to tab 3" })
-vim.keymap.set("n", "<leader>4", function() tab.set_tab(4) end, { desc = "Go to tab 4" })
-vim.keymap.set("n", "<leader>5", function() tab.set_tab(5) end, { desc = "Go to tab 5" })
-vim.keymap.set("n", "<leader>6", function() tab.set_tab(6) end, { desc = "Go to tab 6" })
-vim.keymap.set("n", "<leader>7", function() tab.set_tab(7) end, { desc = "Go to tab 7" })
-vim.keymap.set("n", "<leader>8", function() tab.set_tab(8) end, { desc = "Go to tab 8" })
-vim.keymap.set("n", "<leader>9", function() tab.set_tab(9) end, { desc = "Go to tab 9" })
+vim.keymap.set("n", "<leader>f1", function() tab.set_tab(1) end, { desc = "Go to tab 1" })
+vim.keymap.set("n", "<leader>f2", function() tab.set_tab(2) end, { desc = "Go to tab 2" })
+vim.keymap.set("n", "<leader>f3", function() tab.set_tab(3) end, { desc = "Go to tab 3" })
+vim.keymap.set("n", "<leader>f4", function() tab.set_tab(4) end, { desc = "Go to tab 4" })
+vim.keymap.set("n", "<leader>f5", function() tab.set_tab(5) end, { desc = "Go to tab 5" })
+vim.keymap.set("n", "<leader>f6", function() tab.set_tab(6) end, { desc = "Go to tab 6" })
+vim.keymap.set("n", "<leader>f7", function() tab.set_tab(7) end, { desc = "Go to tab 7" })
+vim.keymap.set("n", "<leader>f8", function() tab.set_tab(8) end, { desc = "Go to tab 8" })
+vim.keymap.set("n", "<leader>f9", function() tab.set_tab(9) end, { desc = "Go to tab 9" })
 
-vim.keymap.set("n", "<leader>r1", function() tab.remove_tab(1) end, { desc = "Go to tab 1" })
-vim.keymap.set("n", "<leader>r2", function() tab.remove_tab(2) end, { desc = "Go to tab 2" })
-vim.keymap.set("n", "<leader>r3", function() tab.remove_tab(3) end, { desc = "Go to tab 3" })
-vim.keymap.set("n", "<leader>r4", function() tab.remove_tab(4) end, { desc = "Go to tab 4" })
-vim.keymap.set("n", "<leader>r5", function() tab.remove_tab(5) end, { desc = "Go to tab 5" })
-vim.keymap.set("n", "<leader>r6", function() tab.remove_tab(6) end, { desc = "Go to tab 6" })
-vim.keymap.set("n", "<leader>r7", function() tab.remove_tab(7) end, { desc = "Go to tab 7" })
-vim.keymap.set("n", "<leader>r8", function() tab.remove_tab(8) end, { desc = "Go to tab 8" })
-vim.keymap.set("n", "<leader>r9", function() tab.remove_tab(9) end, { desc = "Go to tab 9" })
+vim.keymap.set("n", "<leader>r1", function() tab.remove_tab(1) end, { desc = "Remove tab 1" })
+vim.keymap.set("n", "<leader>r2", function() tab.remove_tab(2) end, { desc = "Remove tab 2" })
+vim.keymap.set("n", "<leader>r3", function() tab.remove_tab(3) end, { desc = "Remove tab 3" })
+vim.keymap.set("n", "<leader>r4", function() tab.remove_tab(4) end, { desc = "Remove tab 4" })
+vim.keymap.set("n", "<leader>r5", function() tab.remove_tab(5) end, { desc = "Remove tab 5" })
+vim.keymap.set("n", "<leader>r6", function() tab.remove_tab(6) end, { desc = "Remove tab 6" })
+vim.keymap.set("n", "<leader>r7", function() tab.remove_tab(7) end, { desc = "Remove tab 7" })
+vim.keymap.set("n", "<leader>r8", function() tab.remove_tab(8) end, { desc = "Remove tab 8" })
+vim.keymap.set("n", "<leader>r9", function() tab.remove_tab(9) end, { desc = "Remove tab 9" })
 
