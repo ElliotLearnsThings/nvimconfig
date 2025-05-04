@@ -65,12 +65,12 @@ function M.setup(opts)
 
 	------ SCROLL BETWEEN --------
 
-	vim.keymap.set("n", "]a", function ()
+	vim.keymap.set("n", "]]", function ()
 		local count = vim.v.count > 0 and vim.v.count or 1
 		buffer_history.mover.go_back(buffer_history, count)
 	end, {desc = "move back a buffer in history"})
 
-	vim.keymap.set("n", "[a", function ()
+	vim.keymap.set("n", "[[", function ()
 		local count = vim.v.count > 0 and vim.v.count or 1
 		buffer_history.mover.go_forward(buffer_history, count)
 	end, {desc = "move forward a buffer in history"})
@@ -169,8 +169,8 @@ function M.setup(opts)
 	end, {desc = "Removes a buffer and move up one"}
 	)
 
-	vim.keymap.set("n", "]r", function()
-
+	vim.keymap.set("n", "]r", function() 
+		-- **
 		if #buffer_history.history <= 1 then
 			return
 		end
