@@ -4,7 +4,7 @@ local function trim(s)
 end
 
 local function get_env_data()
-	local env_file = "/home/elliothegraeus/.config/nvim/.env"
+	local env_file = "/Users/elliothegraeus/.config/nvim/.env"
 	local env_data = ""
 	local file = io.open(env_file, "r")
 	if file then
