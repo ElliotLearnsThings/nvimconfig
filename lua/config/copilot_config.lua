@@ -1,5 +1,7 @@
 local M = {}
 
+require("copilot").setup()
+
 vim.keymap.set('n', '<leader>ce', ':Copilot enable<CR>', { desc = 'Enable Copilot' })
 vim.keymap.set('n', '<leader>cr', ':Copilot disable<CR>', { desc = 'Disable Copilot' })
 
@@ -15,6 +17,6 @@ replace_keycodes = false
 
 -- Copilot config
 -- Default disabled
-vim.g.copilot_enabled = 0
+vim.g.copilot_enabled = 1
 
 return M

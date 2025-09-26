@@ -1,6 +1,10 @@
 require("config.lazy")
 require("config.dap_config")
 
+
+-- Lua snips
+require("config.lua_snip")
+
 require("config.buf_switch_2").setup({
 	debug = false,
 })
@@ -19,9 +23,9 @@ require("config.dvorak").setup({
 require("config.macro_config")
 
 -- codecompanion setup
+-- require("config.cc_config").setup(ANTHROPIC_API_KEY)
 
 -- Git signs config
-
 require("config.git_signs_config")
 
 -- Lsp config
@@ -40,6 +44,8 @@ end
 
 vim.cmd([[au TermOpen term://* setlocal nonumber norelativenumber]])
 
+vim.keymap.set("n", "<C-s>", "<CMD>w!<CR>")
+vim.keymap.set("n", "<C-q>", "<CMD>wqa!<CR>")
 vim.keymap.set("n", "<leader>nt", terminal.new_tab, { desc = "Open a new terminal tab" })
 vim.keymap.set("n", "<leader>st", function()
   local height = 4
@@ -118,7 +124,7 @@ vim.keymap.set('n', '<leader><Tab>', 'copilot#Accept("\\<CR>")', {
 -- Telescope 
 
 vim.keymap.set('n', '<leader>cf', function ()
-	require('telescope.builtin').live_grep()	
+	require('telescope.builtin').live_grep()
 end)
 
 vim.keymap.set('n', '<leader>cd', function ()
@@ -133,7 +139,10 @@ vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagn
 vim.keymap.set('n', '<leader>[a', "<CMD>bprev<CR>", { desc = 'Go buffer prev' })
 vim.keymap.set('n', '<leader>]a', "<CMD>bnext<CR>", { desc = 'Go buffer next' })
 
+-- Number related
 vim.opt.relativenumber = true
+vim.opt.number = true
+
 vim.opt.scrolloff = 30
 vim.opt.cursorline = true
 vim.opt.inccommand = 'split'
@@ -146,8 +155,8 @@ vim.g.have_nerd_font = true
 vim.opt.tabstop = 2
 vim.opt.shiftwidth = 2
 vim.opt.softtabstop = 4
-vim.opt.number = true
 vim.opt.showtabline = 1
+vim.opt.shortmess:append "I"
 
 -- Toggle diagnostic visibility
 vim.keymap.set('n', '<leader>td', function()
@@ -232,10 +241,13 @@ vim.g.mapleader = " "
 -- tmux config
 --
 -- line colors
-function LineNumberColors()
-	vim.api.nvim_set_hl(0, 'LineNrAbove', { fg='#51B3EC', bold=true })
+
+function LineNumberColors(param)
+	vim.api.nvim_set_hl(0, '@lsp.type.parameter', {fg='#f67689', italic=true})
+	vim.api.nvim_set_hl(0, 'LineNrAbove', { fg='#81F3EC', bold=true })
 	vim.api.nvim_set_hl(0, 'LineNr', { fg='white', bold=true })
-	vim.api.nvim_set_hl(0, 'LineNrBelow', { fg='#FB508F', bold=true })
+	vim.api.nvim_set_hl(0, 'LineNrBelow', { fg='#dDbe60', bold=true })
+	return param
 end
 
 LineNumberColors()
@@ -262,3 +274,5 @@ vim.keymap.set("n", "<leader>r7", function() tab.remove_tab(7) end, { desc = "Re
 vim.keymap.set("n", "<leader>r8", function() tab.remove_tab(8) end, { desc = "Remove tab 8" })
 vim.keymap.set("n", "<leader>r9", function() tab.remove_tab(9) end, { desc = "Remove tab 9" })
 
+vim.keymap.set("n", "<C-j>", "6j")
+vim.keymap.set("n", "<C-k>", "6k")

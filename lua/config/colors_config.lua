@@ -57,11 +57,11 @@ require("nightfox").setup({
 })
 
 local colors = {
-	"rose-pine-main",
+	-- "rose-pine-main",
 	"gruvbox",
-	"nightfox",
-	"tokyonight-night",
-	"tokyonight-moon",
+	-- "nightfox",
+	-- "tokyonight-night",
+	-- "tokyonight-moon",
 }
 
 local init = false
