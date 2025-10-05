@@ -24,6 +24,12 @@ end
 ---@param target_input integer
 ---@return nil
 function BufferHistoryUtils:delete_at_target(target_input)
+
+	if #self.history == 0 then
+		vim.notify("No buffers left in history")
+		return
+	end
+
 	local target = #self.history - target_input + 1
 	local init_index = self.current_index
 
@@ -32,7 +38,26 @@ function BufferHistoryUtils:delete_at_target(target_input)
 	end
 
 	table.remove(self.history, target)
+	self.utils.fix_levels(self)
+
+	if init_index < target then
+		self.current_index = self.current_index - 1
+	else
+		self.current_index = self.current_index
+	end
+
+	if self.current_index > #self.history then
+		self.current_index = #self.history
+		self.mover.go_to_index(self, 1)
+	elseif self.current_index < 1 then
+		self.current_index = 1
+		self.mover.go_to_index(self, #self.history)
+	else
+		self.mover.go_to_index(self, #self.history - self.current_index)
+	end
+
 	self.utils.update_ui(self)
+
 end
 
 ---@param self BufferHistory
@@ -127,44 +152,50 @@ function BufferHistoryUtils:update_ui()
 
 	-- Loop backwards
 	for i, entry in reversedipairs(self.history) do
-		if entry.level == self.current_index then
-			local filepath = entry.filepath
-			if filepath == nil then
-				filepath = vim.api.nvim_buf_get_name(bufnr)
-			end
-			if filepath == "" then
-				filepath = "[No Name]"
-			end
-
-			-- If oil buffer show Oil
-			if filepath:find("oil://") then
-				filepath = "Oil"
-			end
-
-			-- If file is not a file then show the buffer name
-			if filepath:find("No Name") then
-				filepath = vim.api.nvim_buf_get_name(bufnr)
-			end
-
-			-- Find last / and remove everything before it
-			local last_slash = filepath:match(".*()/")
-			local filename = filepath
-			if last_slash then
-				filename = filepath:sub(last_slash + 1)
-			end
-
-			winbar = winbar .. string.format("[ %s ] ", filename)
-		else
-
-			--vim.notify(vim.inspect{
-				--max_level = max_level,
-				--calculated_level = max_level - entry.level + 1,
-				--entry_level = entry.level + 1,
-				--iter = i,
-			--})
-
-			winbar = winbar .. string.format("[ %d ] ", max_level - entry.level + 1)
+		local filepath = entry.filepath
+		if filepath == nil then
+			filepath = vim.api.nvim_buf_get_name(bufnr)
 		end
+		if filepath == "" then
+			filepath = "[No Name]"
+		end
+
+		-- If oil buffer show Oil
+		if filepath:find("oil://") then
+			filepath = "Oil"
+		end
+
+		-- If file is not a file then show the buffer name
+		if filepath:find("No Name") then
+			filepath = vim.api.nvim_buf_get_name(bufnr)
+		end
+
+		-- Find last / and remove everything before it
+		local last_slash = filepath:match(".*()/")
+		local filename = filepath
+		if last_slash then
+			filename = filepath:sub(last_slash + 1)
+		end
+
+		if entry.level == self.current_index then
+			-- when selected:
+			local label = string.format(" %d: %s ", max_level - entry.level + 1, filename)
+			winbar = winbar
+			.. "%#WinbarSel#" .. " " .. label .. " " .. "%* "
+		else
+			if #self.history > 7 then
+				winbar = winbar
+				.. " "
+				.. "%#WinbarDim#" .. string.format("[%d]", max_level - entry.level + 1) .. "%*"
+				.. " "
+			else
+				winbar = winbar
+				.. " "
+				.. "%#WinbarDim#" .. string.format("%d: %s", max_level - entry.level + 1, filename) .. "%*"
+				.. " "
+			end
+		end
+
 	end
 
 	vim.o.winbar = winbar

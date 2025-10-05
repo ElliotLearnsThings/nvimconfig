@@ -55,6 +55,7 @@ end
 
 ---@class BufferHistoryOptions
 ---@field debug boolean
+---@field startPaused boolean
 
 ---@param opts BufferHistoryOptions
 ---@return BufferHistory
@@ -62,6 +63,37 @@ function M.setup(opts)
 	local buffer_history = M.new(opts.debug)
 
 	if buffer_history.debug then vim.print(vim.inspect(buffer_history)) end
+	if opts.startPaused then
+		buffer_history.paused = true
+		if buffer_history.debug then vim.notify("Buffer history started in paused mode") end
+	end
+
+
+	-- e.g. in your plugin/init
+	-- call this after colorscheme loads (see autocommands below)
+	local function set_winbar_hls()
+		-- follow the scheme
+		local base = vim.api.nvim_get_hl(0, { name = "TabLineSel", link = false })
+		vim.api.nvim_set_hl(0, "WinbarSel", vim.tbl_extend("force", base, { bold = true }))
+		vim.api.nvim_set_hl(0, "WinbarDim", { link = "TabLine" })
+
+		-- resolve real colors (no links)
+		local sel  = vim.api.nvim_get_hl(0, { name = "WinbarSel", link = false })
+		local dim  = vim.api.nvim_get_hl(0, { name = "WinbarDim", link = false })
+		local fill = vim.api.nvim_get_hl(0, { name = "TabLineFill", link = false })
+		local norm = vim.api.nvim_get_hl(0, { name = "Normal", link = false })
+
+		local sel_bg = sel.bg or fill.bg or norm.bg
+		local dim_bg = dim.bg or fill.bg or norm.bg
+
+		-- edge glyphs use the pill bg as their fg
+		vim.api.nvim_set_hl(0, "WinbarPillEdgeSel", { fg = dim_bg, bg = "NONE" })
+	end
+
+	-- keep it robust with lazy.nvim + colorscheme changes
+	vim.api.nvim_create_autocmd("User", { pattern = "VeryLazy", callback = set_winbar_hls })
+	vim.api.nvim_create_autocmd("ColorScheme", { callback = set_winbar_hls })
+	set_winbar_hls() -- initial call
 
 	------ SCROLL BETWEEN --------
 
@@ -77,62 +109,62 @@ function M.setup(opts)
 
 	------ QUICK SWITCH --------
 
-	vim.keymap.set("n", "<A-1>", function ()
+	vim.keymap.set("n", "<A-a>", function ()
 		buffer_history.mover.go_to_index(buffer_history, 1)
 	end, {desc = "move forward a buffer in history"})
 
-	vim.keymap.set("n", "<A-2>", function ()
+	vim.keymap.set("n", "<A-s>", function ()
 		buffer_history.mover.go_to_index(buffer_history, 2)
 	end, {desc = "move forward a buffer in history"})
 
-	vim.keymap.set("n", "<A-3>", function ()
+	vim.keymap.set("n", "<A-d>", function ()
 		buffer_history.mover.go_to_index(buffer_history, 3)
 	end, {desc = "move forward a buffer in history"})
 
-	vim.keymap.set("n", "<A-4>", function ()
+	vim.keymap.set("n", "<A-f>", function ()
 		buffer_history.mover.go_to_index(buffer_history, 4)
 	end, {desc = "move forward a buffer in history"})
 
-	vim.keymap.set("n", "<A-5>", function ()
+	vim.keymap.set("n", "<A-g>", function ()
 		buffer_history.mover.go_to_index(buffer_history, 5)
 	end, {desc = "move forward a buffer in history"})
 
-	vim.keymap.set("n", "<A-6>", function ()
+	vim.keymap.set("n", "<A-h>", function ()
 		buffer_history.mover.go_to_index(buffer_history, 6)
 	end, {desc = "move forward a buffer in history"})
 
-	vim.keymap.set("n", "<A-7>", function ()
+	vim.keymap.set("n", "<A-j>", function ()
 		buffer_history.mover.go_to_index(buffer_history, 7)
 	end, {desc = "move forward a buffer in history"})
 
-	vim.keymap.set("n", "<A-8>", function ()
+	vim.keymap.set("n", "<A-k>", function ()
 		buffer_history.mover.go_to_index(buffer_history, 8)
 	end, {desc = "move forward a buffer in history"})
 
-	vim.keymap.set("n", "<A-9>", function ()
+	vim.keymap.set("n", "<A-l>", function ()
 		buffer_history.mover.go_to_index(buffer_history, 8)
 	end, {desc = "move forward a buffer in history"})
 
 
 	------ CLEAR BUFFER --------
 
-	vim.keymap.set("n", "<leader>bp", function ()
+	vim.keymap.set("n", "<leader>bb", function ()
 		vim.notify(vim.inspect(buffer_history.history))
 		buffer_history.utils.update_ui(buffer_history)
 	end, {desc = "Debug buffer history"})
 
-	vim.keymap.set("n", "<leader>bc", function ()
+	vim.keymap.set("n", "<leader>jk", function ()
 		buffer_history.utils.clear(buffer_history)
 		buffer_history.utils.update_ui(buffer_history)
 	end, {desc = "Clear buffer history"})
 
-	vim.keymap.set("n", "<leader>bb", function()
+	vim.keymap.set("n", "<leader>jl", function()
 		buffer_history.utils.toggle_pause(buffer_history) -- Toggles the pause
 		buffer_history.utils.update_ui(buffer_history)
 	end, {desc = "Remove the buffer from the history"}
 	)
 
-	vim.keymap.set("n", "<leader>bn", function()
+	vim.keymap.set("n", "<leader>jj", function()
 		if buffer_history.utils.get_matching_entry_idx(buffer_history, nil, vim.api.nvim_get_current_buf(), nil, false) then
 			vim.notify("Buffer already in history")
 			return
@@ -142,6 +174,7 @@ function M.setup(opts)
 			buffer_history.on_attach.on_attach(buffer_history, true) -- Bypassed blocks - adds new buffer
 			buffer_history.mover.go_to_index(buffer_history, 1)
 			buffer_history.utils.update_ui(buffer_history)
+			buffer_history.mover.go_back(buffer_history, 1)
 			vim.notify"Added buffer to the end of list!"
 		else
 			vim.notify"Cannot access in unpaused mode or viewing mode"
@@ -160,12 +193,7 @@ function M.setup(opts)
 		table.remove(buffer_history.history, init_index) -- Bypassed blocks - adds new buffer
 		buffer_history.utils.fix_levels(buffer_history)
 
-		if init_index <= #buffer_history.history and #buffer_history.history > 0 then
-			-- current_index = 4, pos = 1
-			buffer_history.current_index = init_index
-		else
-			buffer_history.current_index = init_index - 1
-		end
+		buffer_history.current_index = init_index - 1
 
 		buffer_history.mover.go_to_index(buffer_history, #buffer_history.history - buffer_history.current_index + 1)
 		buffer_history.utils.update_ui(buffer_history)
@@ -197,53 +225,57 @@ function M.setup(opts)
 	end, {desc = "Removes a buffer and move down one"}
 	)
 
-	vim.keymap.set("n", "<leader>jA", function()
+	vim.keymap.set("n", "<leader>j1", function()
 		buffer_history.utils.delete_at_target(buffer_history, 1)
 	end, {desc = "Removes the buffer at index 1"}
 	)
 
-	vim.keymap.set("n", "<leader>jS", function()
+	vim.keymap.set("n", "<leader>j2", function()
 		buffer_history.utils.delete_at_target(buffer_history, 2)
 	end, {desc = "Removes the buffer at index 2"}
 	)
 
-	vim.keymap.set("n", "<leader>jD", function()
+	vim.keymap.set("n", "<leader>j3", function()
 		buffer_history.utils.delete_at_target(buffer_history, 3)
 	end, {desc = "Removes the buffer at index 3"}
 	)
 
-	vim.keymap.set("n", "<leader>jF", function()
+	vim.keymap.set("n", "<leader>j4", function()
 		buffer_history.utils.delete_at_target(buffer_history, 4)
 	end, {desc = "Removes the buffer at index 4"}
 	)
 
-	vim.keymap.set("n", "<leader>jG", function()
+	vim.keymap.set("n", "<leader>j5", function()
 		buffer_history.utils.delete_at_target(buffer_history, 5)
 	end, {desc = "Removes the buffer at index 5"}
 	)
 
-	vim.keymap.set("n", "<leader>jH", function()
+	vim.keymap.set("n", "<leader>j6", function()
 		buffer_history.utils.delete_at_target(buffer_history, 6)
 	end, {desc = "Removes the buffer at index 6"}
 	)
 
-	vim.keymap.set("n", "<leader>jJ", function()
+	vim.keymap.set("n", "<leader>j7", function()
 		buffer_history.utils.delete_at_target(buffer_history, 7)
 	end, {desc = "Removes the buffer at index 7"}
 	)
 
-	vim.keymap.set("n", "<leader>jK", function()
+	vim.keymap.set("n", "<leader>j8", function()
 		buffer_history.utils.delete_at_target(buffer_history, 8)
 	end, {desc = "Removes the buffer at index 8"}
 	)
 
+	vim.keymap.set("n", "<leader>j9", function()
+		buffer_history.utils.delete_at_target(buffer_history, 8)
+	end, {desc = "Removes the buffer at index 8"}
+	)
 
 	vim.api.nvim_create_autocmd("BufEnter", {
 		group = vim.api.nvim_create_augroup("BufferHistory", { clear = true }),
 		callback = function()
 			buffer_history.on_attach.on_attach(buffer_history)
 			buffer_history.utils.update_ui(buffer_history)
-			vim.notify("cur_index = " .. buffer_history.current_index)
+			--vim.notify("cur_index = " .. buffer_history.current_index)
 		end
 	})
 
