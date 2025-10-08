@@ -177,7 +177,7 @@ function BufferHistoryUtils:update_ui()
 			filename = filepath:sub(last_slash + 1)
 		end
 
-		if entry.level == self.current_index then
+		if entry.level == self.current_index and entry.filepath == vim.api.nvim_buf_get_name(bufnr) then
 			-- when selected:
 			local label = string.format(" %d: %s ", max_level - entry.level + 1, filename)
 			winbar = winbar
