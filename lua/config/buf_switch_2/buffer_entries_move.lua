@@ -64,6 +64,12 @@ end
 function Mover:go_back(amount)
 
 	if self.current_index == 1 then
+
+		if #self.history > 0 then
+			self.mover.go_to_index(self, 1)
+			return true
+		end
+
 		vim.print("Already at the back of history!")
 		return false
 	end
@@ -125,6 +131,12 @@ end
 function Mover:go_forward(amount)
 
 	if self.current_index == #self.history then
+
+		if #self.history > 0 then
+			self.mover.go_to_index(self, 1)
+			return true
+		end
+
 		vim.print("Already at the front of history!")
 		return false
 	end

@@ -2,7 +2,7 @@ require("lazy").setup({{"nvim-treesitter/nvim-treesitter", build = ":TSUpdate"}}
 
 function lspDefaultConfig ()
 	require("mason-lspconfig").setup({
-				ensure_installed = { "lua_ls", "basedpyright", "jdtls", "rust_analyzer", "ts_ls" }, -- Adjust to your needs
+				ensure_installed = { "lua_ls", "basedpyright", "jdtls", "rust_analyzer", "vtsls" }, -- Adjust to your needs
 				automatic_installation = true,
 			})
 
