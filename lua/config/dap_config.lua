@@ -445,6 +445,7 @@ dapui.setup({
 	mappings = {
 		open = "o",
 		edit = "e",
+		close = "x",
 		expand = { "<CR>", "<2-LeftMouse>" },
 		remove = "d",
 	},

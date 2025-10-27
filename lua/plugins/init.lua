@@ -24,11 +24,7 @@ function lspDefaultConfig ()
 						procMacro = {
 							enable = true,
 						},
-						checkOnSave = {
-							allFeatures = true,
-							allTargets = true,
-							command = "clippy",
-						},
+						checkOnSave = true,
 						diagnostics = {
 							enableExperimental = true,
 						},
@@ -101,15 +97,15 @@ return {
 		"lewis6991/gitsigns.nvim",
 	},
 
-	{
-		"zbirenbaum/copilot.lua",
-		cmd = "Copilot",
-		event = "InsertEnter",
-	},
-
 	--{
-		--"rcarriga/nvim-dap-ui",
+		--"zbirenbaum/copilot.lua",
+		--cmd = "Copilot",
+		--event = "InsertEnter",
 	--},
+
+	{
+		"rcarriga/nvim-dap-ui",
+	},
 	{
     "folke/lazydev.nvim",
     ft = "lua", -- only load on lua files
@@ -121,12 +117,12 @@ return {
       },
     },
   },
-	--{
-		--"nvim-neotest/nvim-nio",
-	--},
-	--{
-		--"mfussenegger/nvim-dap",
-	--},
+	{
+		"nvim-neotest/nvim-nio",
+	},
+	{
+		"mfussenegger/nvim-dap",
+	},
 	{
 		"tpope/vim-abolish",
 	},
@@ -203,11 +199,11 @@ return {
   dependencies = {
     -- Snippet Engine & Snippet Sources
 
-		{
-			"L3MON4D3/LuaSnip",
+		--{
+			--"L3MON4D3/LuaSnip",
 			-- Friendly snippets
-			"rafamadriz/friendly-snippets",
-		},
+			--"rafamadriz/friendly-snippets",
+		--},
 
     -- Basic Completion Sources
     "hrsh7th/cmp-nvim-lsp",
@@ -241,11 +237,6 @@ return {
     -- Your full cmp.setup() block goes here...
     cmp.setup({
       -- Add snippets capability
-      snippet = {
-        expand = function(args)
-          require("luasnip").lsp_expand(args.body)
-        end,
-      },
       mapping = cmp.mapping.preset.insert({
         ["<C-n>"] = cmp.mapping.select_next_item(),
         ["<C-p>"] = cmp.mapping.select_prev_item(),
@@ -269,8 +260,6 @@ return {
 			},
       -- Your full sources list
       sources = {
-        { name = "luasnip", priority = 150, group_index = 1 },
-
         { name = "nvim_lsp", priority = 120, group_index = 1 },
         { name = "nvim_lua", priority = 110, group_index = 1 },
 
@@ -313,7 +302,9 @@ return {
 		-- dependencies = { "nvim-tree/nvim-web-devicons" }, -- use if prefer nvim-web-devicons
 	},
 
-	'mbbill/undotree',
+	{
+		"jiaoshijie/undotree",
+	},
 
 	{
 		"NeogitOrg/neogit",

@@ -195,7 +195,7 @@ function M.setup(opts)
 
 		buffer_history.current_index = init_index - 1
 
-		if buffer_history.paused and buffer_history.current_index < 1 then
+		if buffer_history.current_index < 1 then
 			buffer_history.current_index = 1
 		end
 		buffer_history.mover.go_to_index(buffer_history, #buffer_history.history - buffer_history.current_index + 1)
@@ -285,4 +285,7 @@ function M.setup(opts)
 	return buffer_history
 end
 
-return M
+M.setup({
+	debug = false,
+	startPaused = false
+})

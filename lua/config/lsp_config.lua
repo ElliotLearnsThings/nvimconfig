@@ -110,6 +110,24 @@ vim.lsp.config['basedpyright'] = {
 }
 
 -- TYPESCRIPT --
+vim.lsp.config['emmet_ls'] = {
+	capabilities = capabilities, -- Ensure capabilities are defined elsewhere
+	filetypes = {
+		"html"
+	},
+}
+
+vim.lsp.config['tailwindcss'] = {
+	capabilities = capabilities, -- Ensure capabilities are defined elsewhere
+	filetypes = {
+		"typescript",
+		"typescriptreact",
+		"javascript",
+		"javascriptreact",
+		"tailwindcss",
+		"html"
+	},
+}
 
 vim.lsp.config['vtsls'] = {
 	capabilities = capabilities, -- Ensure capabilities are defined elsewhere
@@ -118,7 +136,7 @@ vim.lsp.config['vtsls'] = {
 		"typescriptreact",
 		"javascript",
 		"javascriptreact",
-		"tailwindcss"
+		"tailwindcss",
 	},
 	-- Add supported file types
 	settings = {
