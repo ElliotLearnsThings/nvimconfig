@@ -97,51 +97,51 @@ function M.setup(opts)
 
 	------ SCROLL BETWEEN --------
 
-	vim.keymap.set("n", "]a", function ()
+	vim.keymap.set("n", "<>", function ()
 		local count = vim.v.count > 0 and vim.v.count or 1
 		buffer_history.mover.go_back(buffer_history, count)
 	end, {desc = "move back a buffer in history"})
 
-	vim.keymap.set("n", "[a", function ()
+	vim.keymap.set("n", "><", function ()
 		local count = vim.v.count > 0 and vim.v.count or 1
 		buffer_history.mover.go_forward(buffer_history, count)
 	end, {desc = "move forward a buffer in history"})
 
 	------ QUICK SWITCH --------
 
-	vim.keymap.set("n", "<A-a>", function ()
+	vim.keymap.set("n", "<A-1>", function ()
 		buffer_history.mover.go_to_index(buffer_history, 1)
 	end, {desc = "move forward a buffer in history"})
 
-	vim.keymap.set("n", "<A-s>", function ()
+	vim.keymap.set("n", "<A-2>", function ()
 		buffer_history.mover.go_to_index(buffer_history, 2)
 	end, {desc = "move forward a buffer in history"})
 
-	vim.keymap.set("n", "<A-d>", function ()
+	vim.keymap.set("n", "<A-3>", function ()
 		buffer_history.mover.go_to_index(buffer_history, 3)
 	end, {desc = "move forward a buffer in history"})
 
-	vim.keymap.set("n", "<A-f>", function ()
+	vim.keymap.set("n", "<A-4>", function ()
 		buffer_history.mover.go_to_index(buffer_history, 4)
 	end, {desc = "move forward a buffer in history"})
 
-	vim.keymap.set("n", "<A-g>", function ()
+	vim.keymap.set("n", "<A-5>", function ()
 		buffer_history.mover.go_to_index(buffer_history, 5)
 	end, {desc = "move forward a buffer in history"})
 
-	vim.keymap.set("n", "<A-h>", function ()
+	vim.keymap.set("n", "<A-6>", function ()
 		buffer_history.mover.go_to_index(buffer_history, 6)
 	end, {desc = "move forward a buffer in history"})
 
-	vim.keymap.set("n", "<A-j>", function ()
+	vim.keymap.set("n", "<A-7>", function ()
 		buffer_history.mover.go_to_index(buffer_history, 7)
 	end, {desc = "move forward a buffer in history"})
 
-	vim.keymap.set("n", "<A-k>", function ()
+	vim.keymap.set("n", "<A-8>", function ()
 		buffer_history.mover.go_to_index(buffer_history, 8)
 	end, {desc = "move forward a buffer in history"})
 
-	vim.keymap.set("n", "<A-l>", function ()
+	vim.keymap.set("n", "<A-9>", function ()
 		buffer_history.mover.go_to_index(buffer_history, 8)
 	end, {desc = "move forward a buffer in history"})
 
@@ -182,7 +182,7 @@ function M.setup(opts)
 	end, {desc = "Adds a buffer while in blocked mode"}
 	)
 
-	vim.keymap.set("n", "[r", function()
+	vim.keymap.set("n", "<<", function()
 
 		if #buffer_history.history <= 1 then
 			return
@@ -204,7 +204,7 @@ function M.setup(opts)
 	end, {desc = "Removes a buffer and move up one"}
 	)
 
-	vim.keymap.set("n", "]r", function()
+	vim.keymap.set("n", ">>", function()
 		-- **
 		if #buffer_history.history <= 1 then
 			return
@@ -228,47 +228,47 @@ function M.setup(opts)
 	end, {desc = "Removes a buffer and move down one"}
 	)
 
-	vim.keymap.set("n", "<leader>j1", function()
+	vim.keymap.set("n", "<leader>h1", function()
 		buffer_history.utils.delete_at_target(buffer_history, 1)
 	end, {desc = "Removes the buffer at index 1"}
 	)
 
-	vim.keymap.set("n", "<leader>j2", function()
+	vim.keymap.set("n", "<leader>h2", function()
 		buffer_history.utils.delete_at_target(buffer_history, 2)
 	end, {desc = "Removes the buffer at index 2"}
 	)
 
-	vim.keymap.set("n", "<leader>j3", function()
+	vim.keymap.set("n", "<leader>h3", function()
 		buffer_history.utils.delete_at_target(buffer_history, 3)
 	end, {desc = "Removes the buffer at index 3"}
 	)
 
-	vim.keymap.set("n", "<leader>j4", function()
+	vim.keymap.set("n", "<leader>h4", function()
 		buffer_history.utils.delete_at_target(buffer_history, 4)
 	end, {desc = "Removes the buffer at index 4"}
 	)
 
-	vim.keymap.set("n", "<leader>j5", function()
+	vim.keymap.set("n", "<leader>h5", function()
 		buffer_history.utils.delete_at_target(buffer_history, 5)
 	end, {desc = "Removes the buffer at index 5"}
 	)
 
-	vim.keymap.set("n", "<leader>j6", function()
+	vim.keymap.set("n", "<leader>h6", function()
 		buffer_history.utils.delete_at_target(buffer_history, 6)
 	end, {desc = "Removes the buffer at index 6"}
 	)
 
-	vim.keymap.set("n", "<leader>j7", function()
+	vim.keymap.set("n", "<leader>h7", function()
 		buffer_history.utils.delete_at_target(buffer_history, 7)
 	end, {desc = "Removes the buffer at index 7"}
 	)
 
-	vim.keymap.set("n", "<leader>j8", function()
+	vim.keymap.set("n", "<leader>h8", function()
 		buffer_history.utils.delete_at_target(buffer_history, 8)
 	end, {desc = "Removes the buffer at index 8"}
 	)
 
-	vim.keymap.set("n", "<leader>j9", function()
+	vim.keymap.set("n", "<leader>h9", function()
 		buffer_history.utils.delete_at_target(buffer_history, 8)
 	end, {desc = "Removes the buffer at index 8"}
 	)

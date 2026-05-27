@@ -11,6 +11,8 @@ require("config.oil_config")
 require("config.marker_config")
 require("config.buf_switch_2")
 require("config.toggleterm_config")
+require("config.change_variable_config")
+require("config.render_markdown_config")
 
 vim.opt.clipboard:append { 'unnamedplus' }
 vim.opt.relativenumber = true
@@ -18,14 +20,15 @@ vim.opt.number = true
 vim.opt.numberwidth = 2
 vim.opt.signcolumn = "yes"
 vim.opt.linespace = 10
-vim.opt.scrolloff = 40
-vim.opt.cursorline = true
+vim.opt.scrolloff = 20
+vim.opt.cursorline = false
 vim.opt.inccommand = 'split'
 vim.opt.timeoutlen = 300
 vim.opt.updatetime = 250
 vim.opt.ignorecase = true
 vim.opt.smartcase = true
 vim.opt.number = true
+vim.opt.background = 'dark'
 vim.g.have_nerd_font = true
 vim.opt.tabstop = 2
 vim.opt.shiftwidth = 2
@@ -33,22 +36,42 @@ vim.opt.softtabstop = 4
 vim.opt.showtabline = 1
 vim.opt.shortmess:append "I"
 vim.g.mapleader = " "
+vim.opt.guicursor = ""
 
 vim.keymap.set("n", "<C-s>", "<CMD>w!<CR>")
 vim.keymap.set("n", "<C-q>", "<CMD>wqa!<CR>")
 vim.keymap.set("n", "<C-j>", "<C-d>")
 vim.keymap.set("n", "<C-k>", "<C-u>")
-vim.keymap.set('n', '<C-x>', '<C-v>', { noremap = true, desc = "Visual block mode" })
-vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous [D]iagnostic message' })
-vim.keymap.set('n', ']d', vim.diagnostic.goto_next, { desc = 'Go to next [D]iagnostic message' })
-vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = 'Show diagnostic [E]rror messages' })
-vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
-vim.keymap.set('n', '<leader>cf', function () require('telescope.builtin').live_grep() end)
-vim.keymap.set('n', '<leader>cd', function () require('telescope.builtin').find_files() end)
-vim.api.nvim_set_hl(0, '@lsp.type.parameter', {fg='#f67689', italic=true})
-vim.api.nvim_set_hl(0, 'LineNrAbove', { fg='#81F3EC', bold=true })
-vim.api.nvim_set_hl(0, 'LineNr', { fg='white', bold=true })
-vim.api.nvim_set_hl(0, 'LineNrBelow', { fg='#dDbe60', bold=true })
+vim.keymap.set('n', '<C-x>', '<C-v>',
+	{ noremap = true, desc = "Visual block mode" }
+)
+vim.keymap.set('n', '[d', vim.diagnostic.goto_prev,
+	{ desc = 'Go to previous [D]iagnostic message' }
+)
+vim.keymap.set('n', ']d', vim.diagnostic.goto_next,
+	{ desc = 'Go to next [D]iagnostic message' }
+)
+vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist,
+	{ desc = 'Open diagnostic [Q]uickfix list' }
+)
+vim.keymap.set('n', '<leader>ff', vim.lsp.buf.format,
+	{ desc = 'Format the current buffer with the lsp formatter' }
+)
+vim.keymap.set('n', '<leader>e',
+	function() require('telescope.builtin').diagnostics() end
+)
+vim.keymap.set('n', '<leader>cc',
+	function() require('telescope.builtin').live_grep() end
+)
+vim.keymap.set('n', '<leader>cr',
+	function() require('telescope.builtin').grep_string() end
+)
+vim.keymap.set('n', '<leader>cs',
+	function() require('telescope.builtin').spell_suggest() end
+)
+vim.keymap.set('n', '<leader>cd',
+	function() require('telescope.builtin').find_files() end
+)
 
 -- Toggle diagnostic visibility
 vim.keymap.set('n', '<leader>td', function()
@@ -62,3 +85,5 @@ vim.keymap.set('n', '<leader>td', function()
 	end
 end, { desc = "Toggle diagnostic visibility" })
 
+
+-- vim.cmd("syntax off")

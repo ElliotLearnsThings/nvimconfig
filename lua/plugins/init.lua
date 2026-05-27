@@ -32,6 +32,12 @@ function lspDefaultConfig ()
 				},
 			}
 
+			vim.lsp.config['jdtls'] = {
+				capabilities = capabilities,
+				filetypes = { "java" }, -- Add supported file types
+				cmd = { vim.fn.stdpath("data") .. "/mason/bin/jdtls" },
+			}
+
 			vim.lsp.config['tailwindcss'] = {
 			 	capabilities = capabilities,
 				filetypes = { "typescript", "typescriptreact", "javascript", "javascriptreact" }, -- Add supported file types
@@ -68,7 +74,40 @@ API_KEY = get_api_key()
 PYTHON_PATH_FINDER = require("config.local_python_config")
 
 return {
-
+	-- {
+		-- 'Julian/lean.nvim',
+		-- event = { 'BufReadPre *.lean', 'BufNewFile *.lean' },
+-- 
+		-- dependencies = {
+			-- 'nvim-lua/plenary.nvim',
+-- 
+			-- -- optional dependencies:
+-- 
+			-- -- a completion engine
+			-- --    hrsh7th/nvim-cmp or Saghen/blink.cmp are popular choices
+-- 
+			-- -- 'nvim-telescope/telescope.nvim', -- for 2 Lean-specific pickers
+			-- -- 'andymass/vim-matchup',          -- for enhanced % motion behavior
+			-- -- 'andrewradev/switch.vim',        -- for switch support
+			-- -- 'tomtom/tcomment_vim',           -- for commenting
+		-- },
+-- 
+		-- ---@type lean.Config
+		-- opts = { -- see below for full configuration options
+			-- mappings = true,
+		-- }
+	-- },
+	--'gen740/SmoothCursor.nvim',
+	{
+		"uhs-robert/oasis.nvim",
+		lazy = false,
+		priority = 1000,
+		config = function()
+			require("oasis").setup()      -- (see Configuration below for all customization options)
+			vim.cmd.colorscheme("oasis")  -- After setup, apply theme (or any style like "oasis-night")
+		end
+	},
+	{ "catppuccin/nvim", name = "catppuccin" },
 	--{"olimorris/codecompanion.nvim"},
 	--{"rose-pine/neovim", as="rose-pine"},
 	--{
@@ -174,26 +213,24 @@ return {
 		dependencies = { "williamboman/mason.nvim", "neovim/nvim-lspconfig" },
 		config = lspDefaultConfig,
 	},
-	--{
-		--"windwp/nvim-autopairs",
-		--event = "InsertEnter",
-		--config = function()
-			--local autopairs = require("nvim-autopairs")
-			--autopairs.setup({
-				--check_ts = true, -- Check treesitter for context
-				--ts_config = {
-					--lua = { "string" }, -- don't add pairs in lua string
-					--javascript = { "template_string" },
-					--java = false,
-				--},
-			--})
+	{
+		"windwp/nvim-autopairs",
+		event = "InsertEnter",
+		config = function()
+			local autopairs = require("nvim-autopairs")
+			autopairs.setup({
+				check_ts = true, -- Check treesitter for context
+				ts_config = {
+					lua = { "string" }, -- don't add pairs in lua string
+					javascript = { "template_string" },
+				},
+			})
 
-			---- This is the crucial part for nvim-cmp integration
-			--local cmp_autopairs = require("nvim-autopairs.completion.cmp")
-			--local cmp = require("cmp")
-			--cmp.event:on("confirm_done", cmp_autopairs.on_confirm_done())
-		--end,
-	--},
+			local cmp_autopairs = require("nvim-autopairs.completion.cmp")
+			local cmp = require("cmp")
+			cmp.event:on("confirm_done", cmp_autopairs.on_confirm_done())
+		end,
+	},
 	{
 		"hrsh7th/nvim-cmp",
   dependencies = {
@@ -315,5 +352,17 @@ return {
 			"nvim-telescope/telescope.nvim", -- optional
 		},
 		config = true
-	}
+	},
+	{
+		"obsidian-nvim/obsidian.nvim",
+	},
+	{
+			'MeanderingProgrammer/render-markdown.nvim',
+			dependencies = { 'nvim-treesitter/nvim-treesitter', 'nvim-mini/mini.nvim' },            -- if you use the mini.nvim suite
+			-- dependencies = { 'nvim-treesitter/nvim-treesitter', 'nvim-mini/mini.icons' },        -- if you use standalone mini plugins
+			-- dependencies = { 'nvim-treesitter/nvim-treesitter', 'nvim-tree/nvim-web-devicons' }, -- if you prefer nvim-web-devicons
+			---@module 'render-markdown'
+			opts = {},
+	},
+
 }

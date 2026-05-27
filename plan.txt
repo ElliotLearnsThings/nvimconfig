@@ -1,0 +1,11 @@
+we have now that
+dhtn - hjkl
+
+if I make a map such that:
+d --> h
+h --> j
+t --> k
+n --> l
+then the kernal is hkjl, but h is in the image so the kernal is just
+dtn
+so we need to find other keys, we can pick from the kernal to create a second map to map the kernal 

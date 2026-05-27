@@ -34,4 +34,6 @@ function M.setup(opts)
 	end
 end
 
-return M
+M.setup({
+	keymap = "<leader>rn"
+})

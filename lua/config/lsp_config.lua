@@ -117,6 +117,13 @@ vim.lsp.config['emmet_ls'] = {
 	},
 }
 
+vim.lsp.config['rust-analyzer'] = {
+	capabilities = capabilities, -- Ensure capabilities are defined elsewhere
+	filetypes = {
+		"rust"
+	},
+}
+
 vim.lsp.config['tailwindcss'] = {
 	capabilities = capabilities, -- Ensure capabilities are defined elsewhere
 	filetypes = {
@@ -182,11 +189,11 @@ vim.lsp.config['vtsls'] = {
 vim.lsp.config['jdtls'] = {
 	-- This command must be customized to your system, as JDTLS is not typically in the PATH.
 	-- If using mason.nvim, the command below should work out of the box.
-	cmd = { "jdtls" },
+	cmd = { vim.fn.stdpath("data") .. "/mason/bin/jdtls" },
 	filetypes = { "java" },
 	capabilities = capabilities,
 	root_dir = function(fname)
-		return lspconfig.util.root_pattern("pom.xml", "build.gradle", ".gradle", ".git")(fname) or lspconfig.util.find_git_ancestor(fname)
+		return vim.fs.root(fname, { "pom.xml", "build.gradle", ".gradle", ".git" })
 	end,
 	settings = {
 		-- Optional: Configure Java-specific settings here.
@@ -208,4 +215,13 @@ vim.lsp.config['jdtls'] = {
 	end,
 }
 
-
+vim.lsp.enable('jdtls')
+vim.lsp.enable('rust-analyzer')
+vim.api.nvim_create_autocmd("LspAttach", {
+  callback = function(args)
+    local client = vim.lsp.get_client_by_id(args.data.client_id)
+    if client then
+      client.server_capabilities.semanticTokensProvider = nil
+    end
+  end,
+})
