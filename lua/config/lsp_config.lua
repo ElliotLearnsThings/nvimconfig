@@ -31,7 +31,7 @@ local onAttach = function(client, bufnr)
 
 end
 
-local capabilities = require('cmp_nvim_lsp').default_capabilities()
+--local capabilities = require('cmp').default_capabilities()
 -- Set on_attach and capabilities for all language servers
 
 -- PYTHON --

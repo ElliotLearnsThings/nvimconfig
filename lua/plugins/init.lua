@@ -1,368 +1,421 @@
-require("lazy").setup({{"nvim-treesitter/nvim-treesitter", build = ":TSUpdate"}})
+-- ~/.config/nvim/lua/plugins.lua  (or lua/plugins/init.lua)
+--
+-- This file RETURNS a lazy.nvim spec. It must NOT call require("lazy").setup()
+-- itself. Your init.lua should do the bootstrap + setup, e.g.:
+--
+--   vim.g.mapleader = " "
+--   local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
+--   if not (vim.uv or vim.loop).fs_stat(lazypath) then
+--     vim.fn.system({ "git", "clone", "--filter=blob:none",
+--       "https://github.com/folke/lazy.nvim.git", "--branch=stable", lazypath })
+--   end
+--   vim.opt.rtp:prepend(lazypath)
+--   require("lazy").setup("plugins")
+--
+-- Requires Neovim 0.11+ (uses vim.lsp.config / vim.lsp.enable).
 
-function lspDefaultConfig ()
-	require("mason-lspconfig").setup({
-				ensure_installed = { "lua_ls", "basedpyright", "jdtls", "rust_analyzer", "vtsls" }, -- Adjust to your needs
-				automatic_installation = true,
-			})
+---------------------------------------------------------------------------
+-- Optional local config modules (guarded so a missing file doesn't break init)
+---------------------------------------------------------------------------
 
-			local capabilities = require("cmp_nvim_lsp").default_capabilities() -- Optional: integrate with nvim-cmp
+local ok_key, api_key = pcall(require, "config.api_key")
+API_KEY = ok_key and api_key or nil
 
-			vim.lsp.config['rust_analyzer'] = {
-				capabilities = capabilities,
-				filetypes = { "rust" },
-				settings = {
-					['rust-analyzer'] = {
-						cargo = {
-							loadOutDirsFromCheck = true,
-							allFeatures = true,
-							allTargets = true,
-							buildScripts = {
-								enable = true,
-							},
-						},
-						procMacro = {
-							enable = true,
-						},
-						checkOnSave = true,
-						diagnostics = {
-							enableExperimental = true,
-						},
-					}
-				},
-			}
+local ok_py, python_path = pcall(require, "config.local_python_config")
+PYTHON_PATH_FINDER = ok_py and python_path or nil
 
-			vim.lsp.config['jdtls'] = {
-				capabilities = capabilities,
-				filetypes = { "java" }, -- Add supported file types
-				cmd = { vim.fn.stdpath("data") .. "/mason/bin/jdtls" },
-			}
+---------------------------------------------------------------------------
+-- LSP setup (runs from mason-lspconfig's config function)
+---------------------------------------------------------------------------
 
-			vim.lsp.config['tailwindcss'] = {
-			 	capabilities = capabilities,
-				filetypes = { "typescript", "typescriptreact", "javascript", "javascriptreact" }, -- Add supported file types
-			}
+local function setup_lsp()
+  -- capabilities from nvim-cmp, with a sane fallback
+  local ok_cmp, cmp_lsp = pcall(require, "cmp_nvim_lsp")
+  local capabilities = ok_cmp and cmp_lsp.default_capabilities()
+    or vim.lsp.protocol.make_client_capabilities()
 
-			-- Example: Lua language server
-			vim.lsp.config['lua_ls'] = {
-				capabilities = capabilities,
-				settings = {
-					Lua = {
-						runtime = { version = "LuaJIT" },
-						diagnostics = { globals = { "vim" } },
-						workspace = { library = vim.api.nvim_get_runtime_file("", true), checkThirdParty = false },
-					},
-				},
-			}
+  -- resolve a python interpreter if config.local_python_config gives one
+  local python_interpreter
+  if type(PYTHON_PATH_FINDER) == "function" then
+    local ok, p = pcall(PYTHON_PATH_FINDER)
+    python_interpreter = ok and p or nil
+  elseif type(PYTHON_PATH_FINDER) == "string" then
+    python_interpreter = PYTHON_PATH_FINDER
+  end
 
-			-- Enable all servers
-			vim.lsp.enable(vim.tbl_keys(vim.lsp.config))
+  local servers = {
+    lua_ls = {
+      settings = {
+        Lua = {
+          runtime = { version = "LuaJIT" },
+          diagnostics = { globals = { "vim" } },
+          workspace = {
+            library = vim.api.nvim_get_runtime_file("", true),
+            checkThirdParty = false,
+          },
+        },
+      },
+    },
 
+    basedpyright = {
+      settings = {
+        python = python_interpreter and { pythonPath = python_interpreter } or nil,
+        basedpyright = {
+          analysis = {
+            typeCheckingMode = "standard",
+            diagnosticMode = "openFilesOnly",
+          },
+        },
+      },
+    },
+
+    jdtls = {
+      filetypes = { "java" },
+      -- Mason installs jdtls.cmd on Windows, jdtls elsewhere
+      cmd = {
+        vim.fn.stdpath("data")
+          .. "/mason/bin/jdtls"
+          .. (vim.fn.has("win32") == 1 and ".cmd" or ""),
+      },
+    },
+
+    rust_analyzer = {
+      filetypes = { "rust" },
+      settings = {
+        ["rust-analyzer"] = {
+          cargo = {
+            loadOutDirsFromCheck = true,
+            allFeatures = true,
+            allTargets = true,
+            buildScripts = { enable = true },
+          },
+          procMacro = { enable = true },
+          checkOnSave = true,
+          -- NOTE: the old `diagnostics.enableExperimental` key was renamed
+          diagnostics = { experimental = { enable = true } },
+        },
+      },
+    },
+
+    vtsls = {},
+
+    tailwindcss = {
+      filetypes = {
+        "typescript",
+        "typescriptreact",
+        "javascript",
+        "javascriptreact",
+        "html",
+        "css",
+      },
+    },
+  }
+
+  local server_names = vim.tbl_keys(servers)
+
+  require("mason-lspconfig").setup({
+    ensure_installed = server_names,
+    -- we enable the servers ourselves below, so don't do it twice
+    automatic_enable = false,
+  })
+
+  -- global defaults applied to every server
+  vim.lsp.config("*", { capabilities = capabilities })
+
+  for name, cfg in pairs(servers) do
+    vim.lsp.config(name, cfg)
+  end
+
+  -- IMPORTANT: vim.lsp.config is not a plain table, so
+  -- vim.lsp.enable(vim.tbl_keys(vim.lsp.config)) does NOT work.
+  vim.lsp.enable(server_names)
+
+  -- handy LSP keymaps, only bound when a server attaches
+  vim.api.nvim_create_autocmd("LspAttach", {
+    callback = function(args)
+      local opts = { buffer = args.buf, silent = true }
+      vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
+      vim.keymap.set("n", "gr", vim.lsp.buf.references, opts)
+      vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
+      vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, opts)
+      vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, opts)
+      vim.keymap.set("n", "<leader>f", function()
+        vim.lsp.buf.format({ async = true })
+      end, opts)
+    end,
+  })
 end
 
-
-
-local function get_api_key()
-
-	local api_key = require("config.api_key")
-	-- vim.notify(api_key, vim.log.levels.INFO)
-	return api_key
-end
-
-API_KEY = get_api_key()
-
-PYTHON_PATH_FINDER = require("config.local_python_config")
+---------------------------------------------------------------------------
+-- Plugin spec
+---------------------------------------------------------------------------
 
 return {
-	-- {
-		-- 'Julian/lean.nvim',
-		-- event = { 'BufReadPre *.lean', 'BufNewFile *.lean' },
--- 
-		-- dependencies = {
-			-- 'nvim-lua/plenary.nvim',
--- 
-			-- -- optional dependencies:
--- 
-			-- -- a completion engine
-			-- --    hrsh7th/nvim-cmp or Saghen/blink.cmp are popular choices
--- 
-			-- -- 'nvim-telescope/telescope.nvim', -- for 2 Lean-specific pickers
-			-- -- 'andymass/vim-matchup',          -- for enhanced % motion behavior
-			-- -- 'andrewradev/switch.vim',        -- for switch support
-			-- -- 'tomtom/tcomment_vim',           -- for commenting
-		-- },
--- 
-		-- ---@type lean.Config
-		-- opts = { -- see below for full configuration options
-			-- mappings = true,
-		-- }
-	-- },
-	--'gen740/SmoothCursor.nvim',
-	{
-		"uhs-robert/oasis.nvim",
-		lazy = false,
-		priority = 1000,
-		config = function()
-			require("oasis").setup()      -- (see Configuration below for all customization options)
-			vim.cmd.colorscheme("oasis")  -- After setup, apply theme (or any style like "oasis-night")
-		end
-	},
-	{ "catppuccin/nvim", name = "catppuccin" },
-	--{"olimorris/codecompanion.nvim"},
-	--{"rose-pine/neovim", as="rose-pine"},
-	--{
-		--"EdenEast/nightfox.nvim"
-	--},
-	{"ellisonleao/gruvbox.nvim"},
-	{
-		"nvimtools/none-ls.nvim",
-	},
-	'nvim-treesitter/nvim-treesitter',
-	'nvim-tree/nvim-web-devicons',
-	'akinsho/toggleterm.nvim',
-	--{
-    --'MeanderingProgrammer/render-markdown.nvim',
-    --dependencies = { 'nvim-treesitter/nvim-treesitter', 'echasnovski/mini.nvim' }, -- if you use the mini.nvim suite
-    -- dependencies = { 'nvim-treesitter/nvim-treesitter', 'echasnovski/mini.icons' }, -- if you use standalone mini plugins
-    -- dependencies = { 'nvim-treesitter/nvim-treesitter', 'nvim-tree/nvim-web-devicons' }, -- if you prefer nvim-web-devicons
-    -----@module 'render-markdown'
-    -----@type render.md.UserConfig
-    --opts = {
+  ------------------------------------------------------------------ theme --
+  {
+    "uhs-robert/oasis.nvim",
+    lazy = false,
+    priority = 1000,
+    config = function()
+      require("oasis").setup()
+      vim.cmd.colorscheme("oasis")
+    end,
+  },
+  { "catppuccin/nvim", name = "catppuccin", lazy = true },
+  { "ellisonleao/gruvbox.nvim", lazy = true },
 
-		--}
-	--},
+  ------------------------------------------------------------- completion --
+  { "hrsh7th/cmp-nvim-lsp" },
+  {
+    "hrsh7th/nvim-cmp",
+    event = "InsertEnter",
+    dependencies = { "hrsh7th/cmp-nvim-lsp" },
+    config = function()
+      local cmp = require("cmp")
+      cmp.setup({
+        sources = {
+          { name = "nvim_lsp" },
+        },
+        mapping = cmp.mapping.preset.insert({
+          ["<C-p>"] = cmp.mapping.select_prev_item({ behavior = "select" }),
+          ["<C-n>"] = cmp.mapping.select_next_item({ behavior = "select" }),
+          ["<CR>"] = cmp.mapping.confirm({ select = false }),
+          ["<C-Space>"] = cmp.mapping.complete(),
+          ["<C-u>"] = cmp.mapping.scroll_docs(-4),
+          ["<C-d>"] = cmp.mapping.scroll_docs(4),
+        }),
+        snippet = {
+          expand = function(args)
+            vim.snippet.expand(args.body)
+          end,
+        },
+      })
+    end,
+  },
 
-	{
-		"lewis6991/gitsigns.nvim",
-	},
-
-	--{
-		--"zbirenbaum/copilot.lua",
-		--cmd = "Copilot",
-		--event = "InsertEnter",
-	--},
-
-	{
-		"rcarriga/nvim-dap-ui",
-	},
-	{
+  -------------------------------------------------------------------- LSP --
+  -- mason.nvim and mason-lspconfig.nvim moved to the mason-org organisation
+  {
+    "mason-org/mason.nvim",
+    build = ":MasonUpdate",
+    opts = {},
+  },
+  {
+    "mason-org/mason-lspconfig.nvim",
+    dependencies = {
+      "mason-org/mason.nvim",
+      "neovim/nvim-lspconfig",
+      "hrsh7th/cmp-nvim-lsp",
+    },
+    config = setup_lsp,
+  },
+  {
     "folke/lazydev.nvim",
-    ft = "lua", -- only load on lua files
+    ft = "lua",
     opts = {
       library = {
-        -- See the configuration section for more details
-        -- Load luvit types when the `vim.uv` word is found
         { path = "${3rd}/luv/library", words = { "vim%.uv" } },
       },
     },
   },
-	{
-		"nvim-neotest/nvim-nio",
-	},
-	{
-		"mfussenegger/nvim-dap",
-	},
-	{
-		"tpope/vim-abolish",
-	},
-	-- {
-		-- "m4xshen/hardtime.nvim",
-		-- dependencies = { "MunifTanjim/nui.nvim" },
-		-- opts = {}
-	-- },
-	{
-		"MunifTanjim/prettier.nvim",
-	},
-	-- {
-		-- "phaazon/hop.nvim",
-		-- branch = 'v2',
-	-- },
-	--{
-		--'nvim-lualine/lualine.nvim',
-		--dependencies = { 'nvim-tree/nvim-web-devicons' }
-	--},
-	--{
-		--'brenoprata10/nvim-highlight-colors'
-	--},
-
-	--{
-		--"nvim-tree/nvim-web-devicons",
-	--},
-
-	-- In your plugins file
-	{
-		"kylechui/nvim-surround",
-		version = "*", -- Use for stability; omit to use `main` branch for the latest features
-		event = "VeryLazy",
-		config = function()
-			require("nvim-surround").setup({
-				-- Configuration is optional, defaults are great
-			})
-		end,
-	},
-
-	{
-		"williamboman/mason.nvim",
-		build = ":MasonUpdate", -- optional
-		config = function()
-			require("mason").setup()
-		end,
-	},
-	{
-		"williamboman/mason-lspconfig.nvim",
-		dependencies = { "williamboman/mason.nvim", "neovim/nvim-lspconfig" },
-		config = lspDefaultConfig,
-	},
-	{
-		"windwp/nvim-autopairs",
-		event = "InsertEnter",
-		config = function()
-			local autopairs = require("nvim-autopairs")
-			autopairs.setup({
-				check_ts = true, -- Check treesitter for context
-				ts_config = {
-					lua = { "string" }, -- don't add pairs in lua string
-					javascript = { "template_string" },
-				},
-			})
-
-			local cmp_autopairs = require("nvim-autopairs.completion.cmp")
-			local cmp = require("cmp")
-			cmp.event:on("confirm_done", cmp_autopairs.on_confirm_done())
-		end,
-	},
-	{
-		"hrsh7th/nvim-cmp",
-  dependencies = {
-    -- Snippet Engine & Snippet Sources
-
-		--{
-			--"L3MON4D3/LuaSnip",
-			-- Friendly snippets
-			--"rafamadriz/friendly-snippets",
-		--},
-
-    -- Basic Completion Sources
-    "hrsh7th/cmp-nvim-lsp",
-    "hrsh7th/cmp-buffer",
-    "hrsh7th/cmp-path",
-    "hrsh7th/cmp-nvim-lua",
-    "ray-x/cmp-treesitter",
-    "hrsh7th/cmp-calc",
-    "hrsh7th/cmp-emoji",
-		"onsails/lspkind.nvim",
-
-    -- Specialized Sources
-    "folke/lazydev.nvim", -- For "lazydev"
-    "lukas-reineke/cmp-rg", -- For "rg"
-    "saecki/crates.nvim", -- For "crates"
-    "petertriho/cmp-git", -- For "git"
+  {
+    "nvimtools/none-ls.nvim",
+    dependencies = { "nvim-lua/plenary.nvim" },
+    opts = {},
   },
-  opts = function(_, opts)
-    -- Your existing opts function is fine
-    opts.sources = opts.sources or {}
-    table.insert(opts.sources, {
-      name = "lazydev",
-      group_index = 0,
-    })
-  end,
-  config = function()
-
-
-    local cmp = require("cmp")
-		local lspkind = require("lspkind")
-    -- Your full cmp.setup() block goes here...
-    cmp.setup({
-      -- Add snippets capability
-      mapping = cmp.mapping.preset.insert({
-        ["<C-n>"] = cmp.mapping.select_next_item(),
-        ["<C-p>"] = cmp.mapping.select_prev_item(),
-        ["<Tab>"] = cmp.mapping.confirm({ select = true }),
-        ["<CR>"] = cmp.mapping.confirm({ select = true }), -- I'd recommend adding this too
-      }),
-
-
-			-- Formatting
-			formatting = {
-				format = lspkind.cmp_format({
-					mode = "symbol_text", -- show symbol and text
-					maxwidth = 50, -- prevent the popup from showing too wide
-					ellipsis_char = "...", -- what to see when text is too long
-					-- The function below will be called before any actual modifications from lspkind
-					-- so that you can provide more controls on popup customization. (Optional)
-					before = function(entry, vim_item)
-						return vim_item
-					end,
-				}),
-			},
-      -- Your full sources list
-      sources = {
-        { name = "nvim_lsp", priority = 120, group_index = 1 },
-        { name = "nvim_lua", priority = 110, group_index = 1 },
-
-        { name = "lazydev", priority = 100, group_index = 1 },
-
-        { name = "treesitter", max_item_count = 5, priority = 90, group_index = 2 },
-        { name = "buffer", max_item_count = 5, priority = 80, group_index = 2 },
-        { name = "rg", keyword_length = 4, max_item_count = 5, priority = 70, group_index = 2 },
-        {
-          name = "crates",
-          priority = 100,
-          group_index = 3,
-          entry_filter = function()
-            return vim.fn.filereadable("Cargo.toml") == 1
-          end,
-        },
-        { name = "git", priority = 60, group_index = 3 },
-        { name = "dap", priority = 60, group_index = 3 },
-        { name = "path", priority = 50, group_index = 4 }, -- Note: Changed "async_path" to "path"
-        { name = "calc", priority = 40, group_index = 4 },
-        { name = "emoji", priority = 40, group_index = 4 },
+  {
+    "MunifTanjim/prettier.nvim",
+    dependencies = { "nvimtools/none-ls.nvim" },
+    opts = {
+      bin = "prettier",
+      filetypes = {
+        "css",
+        "html",
+        "javascript",
+        "javascriptreact",
+        "json",
+        "markdown",
+        "scss",
+        "typescript",
+        "typescriptreact",
+        "yaml",
       },
-    })
-  end,
-},
+    },
+  },
 
-	{
-		"nvim-telescope/telescope.nvim", tag = '0.1.8',
-		branch = '0.1.x',
-		dependencies = { 'nvim-lua/plenary.nvim' }
-	},
+------------------------------------------------------------- treesitter --
+  {
+    "nvim-treesitter/nvim-treesitter",
+    branch = "main",
+    lazy = false,
+    build = ":TSUpdate",
+    config = function()
+      require("nvim-treesitter").setup()
 
-	{
-		'stevearc/oil.nvim',
-		---@module 'oil'
-		---@type oil.SetupOpts
-		opts = {},
-		-- Optional dependencies
-		dependencies = { { "echasnovski/mini.icons", opts = {} } },
-		-- dependencies = { "nvim-tree/nvim-web-devicons" }, -- use if prefer nvim-web-devicons
-	},
+      require("nvim-treesitter").install({
+        "lua", "vim", "vimdoc", "markdown", "markdown_inline",
+        "rust", "python", "java", "typescript", "tsx", "javascript",
+      })
 
-	{
-		"jiaoshijie/undotree",
-	},
+      vim.api.nvim_create_autocmd("FileType", {
+        callback = function(args)
+          local lang = vim.treesitter.language.get_lang(args.match)
+          if not lang or not vim.treesitter.language.add(lang) then
+            return
+          end
+          pcall(vim.treesitter.start, args.buf, lang)
+          vim.bo[args.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+        end,
+      })
+    end,
+  },
+  ------------------------------------------------------------------- misc --
+	-- {
+    -- 'milanglacier/minuet-ai.nvim',
+    -- config = function()
+        -- require('minuet').setup {
+            -- provider = 'openai_fim_compatible',
+            -- n_completions = 1,
+            -- context_window = 1024,
+            -- provider_options = {
+                -- openai_fim_compatible = {
+                    -- -- Minuet treats string values as environment variable names.
+                    -- -- You can use a function returning a dummy string since Ollama doesn't require an API key.
+                    -- api_key = 'TERM',
+                    -- name = 'Ollama',
+                    -- end_point = 'http://localhost:11434/v1/completions',
+                    -- model = 'qwen2.5-coder:7b-instruct', -- Ensure this model is pulled in Ollama
+                    -- optional = {
+                        -- max_tokens = 350,
+                        -- top_p = 0.9,
+                    -- },
+                -- },
+            -- },
+-- 
+            -- virtualtext = {
+                -- -- Enable auto-triggering for all filetypes (or list specific ones like {'lua', 'python'})
+                -- auto_trigger_ft = { '*' },
+                -- keymap = {
+                    -- accept = '<A-A>',
+                    -- accept_line = '<A-a>',
+                    -- accept_n_lines = '<A-z>',
+                    -- prev = '<A-[>',
+                    -- next = '<A-]>',
+                    -- dismiss = '<A-e>',
+                -- },
+            -- },
+        -- }
+    -- end,
+-- },
+  { "nvim-tree/nvim-web-devicons", lazy = true },
+  {
+    "akinsho/toggleterm.nvim",
+    version = "*",
+    opts = { open_mapping = [[<c-\>]] },
+  },
+  {
+    "lewis6991/gitsigns.nvim",
+    opts = {},
+  },
+  {
+    "kylechui/nvim-surround",
+    version = "*",
+    event = "VeryLazy",
+    opts = {},
+  },
+  {
+    "windwp/nvim-autopairs",
+    event = "InsertEnter",
+    dependencies = { "hrsh7th/nvim-cmp" },
+    config = function()
+      local autopairs = require("nvim-autopairs")
+      autopairs.setup({
+        check_ts = true,
+        ts_config = {
+          lua = { "string" },
+          javascript = { "template_string" },
+        },
+      })
 
-	{
-		"NeogitOrg/neogit",
-		dependencies = {
-			"nvim-lua/plenary.nvim",         -- required
-			"sindrets/diffview.nvim",        -- optional - Diff integration
+      local cmp_autopairs = require("nvim-autopairs.completion.cmp")
+      require("cmp").event:on("confirm_done", cmp_autopairs.on_confirm_done())
+    end,
+  },
+  { "tpope/vim-abolish" },
+  {
+    "nvim-telescope/telescope.nvim",
+    -- pick ONE of branch/tag, not both
+    branch = "0.1.x",
+    dependencies = { "nvim-lua/plenary.nvim" },
+    opts = {},
+  },
+  {
+    "stevearc/oil.nvim",
+    ---@module 'oil'
+    ---@type oil.SetupOpts
+    opts = {},
+    dependencies = { { "echasnovski/mini.icons", opts = {} } },
+  },
+  {
+    "jiaoshijie/undotree",
+    dependencies = { "nvim-lua/plenary.nvim" },
+    opts = {},
+    keys = {
+      { "<leader>u", "<cmd>lua require('undotree').toggle()<cr>", desc = "Undotree" },
+    },
+  },
+  {
+    "NeogitOrg/neogit",
+    dependencies = {
+      "nvim-lua/plenary.nvim",
+      "sindrets/diffview.nvim",
+      "nvim-telescope/telescope.nvim",
+    },
+    config = true,
+  },
 
-			"nvim-telescope/telescope.nvim", -- optional
-		},
-		config = true
-	},
-	{
-		"obsidian-nvim/obsidian.nvim",
-	},
-	{
-			'MeanderingProgrammer/render-markdown.nvim',
-			dependencies = { 'nvim-treesitter/nvim-treesitter', 'nvim-mini/mini.nvim' },            -- if you use the mini.nvim suite
-			-- dependencies = { 'nvim-treesitter/nvim-treesitter', 'nvim-mini/mini.icons' },        -- if you use standalone mini plugins
-			-- dependencies = { 'nvim-treesitter/nvim-treesitter', 'nvim-tree/nvim-web-devicons' }, -- if you prefer nvim-web-devicons
-			---@module 'render-markdown'
-			opts = {},
-	},
+  -------------------------------------------------------------------- DAP --
+  { "mfussenegger/nvim-dap" },
+  { "nvim-neotest/nvim-nio" },
+  {
+    "rcarriga/nvim-dap-ui",
+    dependencies = { "mfussenegger/nvim-dap", "nvim-neotest/nvim-nio" },
+    config = function()
+      local dap, dapui = require("dap"), require("dapui")
+      dapui.setup()
+      dap.listeners.before.attach.dapui_config = dapui.open
+      dap.listeners.before.launch.dapui_config = dapui.open
+      dap.listeners.before.event_terminated.dapui_config = dapui.close
+      dap.listeners.before.event_exited.dapui_config = dapui.close
+    end,
+  },
 
+  ------------------------------------------------------------------ avante --
+  -- Local fork checked out at ~/Repos/avante-claude. Options live in
+  -- lua/config/avante_config.lua. Default keymaps: <leader>aa ask,
+  -- <leader>ae edit (visual), <leader>at toggle sidebar, <leader>ar refresh.
+  {
+    "yetone/avante.nvim",
+    dir = vim.fn.expand("~/Repos/avante-claude"),
+    build = "make",
+    event = "VeryLazy",
+    version = false,
+    ---@module 'avante'
+    ---@type avante.Config
+    opts = function()
+      return require("config.avante_config")
+    end,
+    dependencies = {
+      "nvim-lua/plenary.nvim",
+      "MunifTanjim/nui.nvim",
+      "nvim-telescope/telescope.nvim",
+      "hrsh7th/nvim-cmp",
+      "nvim-tree/nvim-web-devicons",
+      {
+        "MeanderingProgrammer/render-markdown.nvim",
+        opts = { file_types = { "markdown", "Avante" } },
+        ft = { "markdown", "Avante" },
+      },
+    },
+  },
 }

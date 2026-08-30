@@ -3,7 +3,7 @@ require("config.undotree_config")
 require("config.neogit_config")
 require("config.git_signs_config")
 require("config.lsp_config")
-require("config.treesitter_config")
+-- require("config.treesitter_config")
 require("config.colors_config")
 require("config.none_ls_config")
 require("config.window_config")
@@ -12,7 +12,10 @@ require("config.marker_config")
 require("config.buf_switch_2")
 require("config.toggleterm_config")
 require("config.change_variable_config")
-require("config.render_markdown_config")
+-- require("config.render_markdown_config")
+-- require("config.lua_snip")
+-- require("config.latex_snippets")
+
 
 vim.opt.clipboard:append { 'unnamedplus' }
 vim.opt.relativenumber = true
@@ -20,7 +23,7 @@ vim.opt.number = true
 vim.opt.numberwidth = 2
 vim.opt.signcolumn = "yes"
 vim.opt.linespace = 10
-vim.opt.scrolloff = 20
+vim.opt.scrolloff = 5
 vim.opt.cursorline = false
 vim.opt.inccommand = 'split'
 vim.opt.timeoutlen = 300

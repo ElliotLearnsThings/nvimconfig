@@ -1,6 +1,11 @@
 -- In your LuaSnip configuration file (e.g., lua/config/luasnip.lua)
 
 local ls = require("luasnip")
+
+ls.setup({
+	enable_autosnippets = true,
+	update_events = "TextChanged,TextChangedI",
+})
 -- Pull in the snippet functions
 local s = ls.s
 local i = ls.i
