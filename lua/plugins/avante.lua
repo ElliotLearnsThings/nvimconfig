@@ -49,6 +49,8 @@ return {
 				-- output largest -> input largest -> code largest -> minimised.
 				-- Visual mode still sends the selection to ask.
 				cycle_view = "<leader>aa",
+				-- Same cycle backwards; a/w stay on the left hand with no shift.
+				cycle_view_reverse = "<leader>aw",
 			},
 		},
 		dependencies = {
