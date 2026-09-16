@@ -1,13 +1,13 @@
--- avante.nvim (local fork at ~/Repos/avante.nvim) using the Claude Code ACP harness.
+-- avante.nvim (local fork at ~/Work/avante-local) using the Claude Code ACP harness.
 --
 -- The fork is loaded from disk via lazy.nvim's `dir`, so edits in the repo take
 -- effect on the next nvim start without reinstalling. Native Rust libs are built
 -- with `make BUILD_FROM_SOURCE=true` in that repo (lua/avante_*.so).
 --
 -- Requires on PATH: `claude` (Claude Code CLI, logged in) and `claude-agent-acp`
--- (npm i -g @zed-industries/claude-agent-acp).
+-- (local fork at ~/Work/claude-agent-acp-local, exposed via `npm link`).
 
-local avante_dir = vim.fn.expand("~/Repos/avante.nvim")
+local avante_dir = vim.fn.expand("~/Work/avante-local")
 
 return {
 	{
@@ -31,6 +31,24 @@ return {
 			behaviour = {
 				-- Open files and jump to the lines the agent edits.
 				acp_follow_agent_locations = true,
+			},
+			windows = {
+				-- Two columns instead of a stack: the agent's output keeps a
+				-- full-height window of its own, with the prompt input beside
+				-- it on the right.
+				width = 35,
+				-- Sidebar share while <leader>aa has the output or input largest.
+				focus_width = 70,
+				input = {
+					position = "right",
+					width = 35, -- % of the sidebar width
+				},
+			},
+			mappings = {
+				-- Sharing the ask key: opens avante when closed, otherwise cycles
+				-- output largest -> input largest -> code largest -> minimised.
+				-- Visual mode still sends the selection to ask.
+				cycle_view = "<leader>aa",
 			},
 		},
 		dependencies = {
