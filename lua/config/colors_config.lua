@@ -64,6 +64,7 @@ local colors = {
 	-- "tokyonight-moon",
 }
 
+
 local init = false
 
 local function get_random_index(table)

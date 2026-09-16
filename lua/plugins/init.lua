@@ -1,4 +1,3 @@
-require("lazy").setup({{"nvim-treesitter/nvim-treesitter", build = ":TSUpdate"}})
 
 function lspDefaultConfig ()
 	require("mason-lspconfig").setup({
@@ -78,20 +77,9 @@ return {
 	{
 		"nvimtools/none-ls.nvim",
 	},
-	'nvim-treesitter/nvim-treesitter',
+	{ 'nvim-treesitter/nvim-treesitter', branch = 'main', build = ':TSUpdate' },
 	'nvim-tree/nvim-web-devicons',
 	'akinsho/toggleterm.nvim',
-	--{
-    --'MeanderingProgrammer/render-markdown.nvim',
-    --dependencies = { 'nvim-treesitter/nvim-treesitter', 'echasnovski/mini.nvim' }, -- if you use the mini.nvim suite
-    -- dependencies = { 'nvim-treesitter/nvim-treesitter', 'echasnovski/mini.icons' }, -- if you use standalone mini plugins
-    -- dependencies = { 'nvim-treesitter/nvim-treesitter', 'nvim-tree/nvim-web-devicons' }, -- if you prefer nvim-web-devicons
-    -----@module 'render-markdown'
-    -----@type render.md.UserConfig
-    --opts = {
-
-		--}
-	--},
 
 	{
 		"lewis6991/gitsigns.nvim",
@@ -102,7 +90,29 @@ return {
 		--cmd = "Copilot",
 		--event = "InsertEnter",
 	--},
+	{
+		'Julian/lean.nvim',
+		event = { 'BufReadPre *.lean', 'BufNewFile *.lean' },
 
+		dependencies = {
+			'nvim-lua/plenary.nvim',
+
+			-- optional dependencies:
+
+			-- a completion engine
+			--    hrsh7th/nvim-cmp or Saghen/blink.cmp are popular choices
+
+			-- 'nvim-telescope/telescope.nvim', -- for 2 Lean-specific pickers
+			-- 'andymass/vim-matchup',          -- for enhanced % motion behavior
+			-- 'andrewradev/switch.vim',        -- for switch support
+			-- 'tomtom/tcomment_vim',           -- for commenting
+		},
+
+		---@type lean.Config
+		opts = { -- see below for full configuration options
+			mappings = true,
+		}
+	},
 	{
 		"rcarriga/nvim-dap-ui",
 	},

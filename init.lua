@@ -11,6 +11,7 @@ require("config.oil_config")
 require("config.marker_config")
 require("config.buf_switch_2")
 require("config.toggleterm_config")
+require("config.dap_config")
 
 vim.opt.clipboard:append { 'unnamedplus' }
 vim.opt.relativenumber = true
