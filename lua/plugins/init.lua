@@ -297,8 +297,10 @@ return {
 },
 
 	{
-		"nvim-telescope/telescope.nvim", tag = '0.1.8',
-		branch = '0.1.x',
+		-- master: 0.1.x calls nvim-treesitter's removed `parsers.ft_to_lang`, which
+		-- breaks previews now that nvim-treesitter is on its main branch.
+		"nvim-telescope/telescope.nvim",
+		branch = "master",
 		dependencies = { 'nvim-lua/plenary.nvim' }
 	},
 
