@@ -36,16 +36,41 @@ local capabilities = require('cmp_nvim_lsp').default_capabilities()
 
 -- PYTHON --
 
+local python_env = require("config.python_env")
+
 vim.lsp.config['basedpyright'] = {
     capabilities = capabilities,
     filetypes = { "python" },
-    -- basedpyright has its own settings, distinct from pylsp.
-    -- These are configured under 'settings.python' (following Pyright's convention)
-    -- and directly under the root for `report` issues.
+    -- uv keeps one `.venv` at the *workspace* root, so a member package's own
+    -- pyproject.toml is the wrong project root: uv.lock (only ever written at the
+    -- workspace root) and pyrightconfig.json take priority over it. Everything
+    -- below this line is nvim-lspconfig's default list.
+    root_markers = {
+        { 'pyrightconfig.json', 'uv.lock' },
+        'pyproject.toml',
+        'setup.py',
+        'setup.cfg',
+        'requirements.txt',
+        'Pipfile',
+        '.git',
+    },
+    -- basedpyright resolves imports from `python.pythonPath` and ignores
+    -- `python.venv` over the wire, so the interpreter is resolved per project
+    -- root and injected below rather than pointed at with venvPath/venv.
+    before_init = function(_, config)
+        -- Mutated in place: vim.lsp.Client keeps a reference to this very table
+        -- and answers workspace/configuration out of it, so replacing it here
+        -- would leave the client holding the old settings.
+        config.settings.python = config.settings.python or {}
+        config.settings.python.pythonPath = python_env.resolve(config.root_dir)
+    end,
     settings = {
 			python = {
-				venvPath = ".",   -- folder that contains the env
-				venv = ".venv",
+            -- NOTE: basedpyright reads `basedpyright.analysis` in preference to
+            -- `python.analysis`, and nvim-lspconfig always supplies the former,
+            -- so nothing in this block currently reaches the server. Rename the
+            -- key to `basedpyright` to turn it on (expect a lot of new
+            -- diagnostics: typeCheckingMode is strict and reportAny is true).
             analysis = {
                 -- General analysis settings
                 diagnosticMode = "workspace", -- 'workspace' or 'openFilesOnly'
@@ -177,6 +202,16 @@ vim.lsp.config['vtsls'] = {
 	end,
 }
 
+-- JULIA --
+
+-- LanguageServer.jl lives in ~/.julia/environments/nvim-lspconfig, where
+-- nvim-lspconfig's default cmd looks for it (not managed by mason).
+-- Not a mason package, so mason-lspconfig won't enable it for us.
+vim.lsp.config['julials'] = {
+	capabilities = capabilities,
+}
+vim.lsp.enable('julials')
+
 -- JAVA --
 
 vim.lsp.config['jdtls'] = {
@@ -185,9 +220,9 @@ vim.lsp.config['jdtls'] = {
 	cmd = { "jdtls" },
 	filetypes = { "java" },
 	capabilities = capabilities,
-	root_dir = function(fname)
-		return lspconfig.util.root_pattern("pom.xml", "build.gradle", ".gradle", ".git")(fname) or lspconfig.util.find_git_ancestor(fname)
-	end,
+	-- Not a root_dir function: vim.lsp.config calls it as (bufnr, on_dir), and an error
+	-- there aborts the FileType autocmd and the :edit with it, so BufEnter never fires
+	root_markers = { "pom.xml", "build.gradle", ".gradle", ".git" },
 	settings = {
 		-- Optional: Configure Java-specific settings here.
 		-- For example, setting the Java home directory

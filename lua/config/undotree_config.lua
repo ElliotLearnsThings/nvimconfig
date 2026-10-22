@@ -28,4 +28,3 @@ undotree.setup({
 
 vim.keymap.set('n', '<leader>u', require('undotree').toggle, { noremap = true, silent = true })
 vim.g.undotree_WindowLayout = 2
-vim.o.undofile = true

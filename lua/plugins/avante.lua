@@ -6,6 +6,8 @@
 --
 -- Requires on PATH: `claude` (Claude Code CLI, logged in) and `claude-agent-acp`
 -- (local fork at ~/Work/claude-agent-acp-local, exposed via `npm link`).
+--
+-- Can be switched off persistently with `:AvanteToggle` (<leader>ta).
 
 local avante_dir = vim.fn.expand("~/Work/avante-local")
 
@@ -13,6 +15,9 @@ return {
 	{
 		"yetone/avante.nvim",
 		dir = avante_dir,
+		-- Persistent on/off switch: `:AvanteToggle` / <leader>ta flips a state
+		-- file and the next nvim start reads it here. See config/avante_toggle.lua.
+		enabled = require("config.avante_toggle").is_enabled(),
 		-- The fork is the source of truth; `dir` loads it in place and `pin`
 		-- keeps lazy's updater from touching the working tree.
 		pin = true,
@@ -51,6 +56,10 @@ return {
 				cycle_view = "<leader>aa",
 				-- Same cycle backwards; a/w stay on the left hand with no shift.
 				cycle_view_reverse = "<leader>aw",
+				-- Cancelling a request is the common one, so it gets the unshifted key
+				-- and the rarely used suggestion toggle moves to the shifted one.
+				stop = "<leader>as",
+				toggle = { suggestion = "<leader>aS" },
 			},
 		},
 		dependencies = {
@@ -60,6 +69,23 @@ return {
 			"nvim-telescope/telescope.nvim", -- file_selector provider
 			"hrsh7th/nvim-cmp", -- completion for avante commands/mentions
 			"nvim-tree/nvim-web-devicons",
+			-- Image paste. Without it avante leaves vim.paste alone, so pasting a
+			-- screenshot (clipboard holds only image/png) inserts the raw bytes.
+			-- With it the image is saved and an `image: <path>` line is inserted,
+			-- which the ACP provider sends to Claude as an image block.
+			{
+				"HakonHarnes/img-clip.nvim",
+				opts = {
+					default = {
+						embed_image_as_base64 = false,
+						prompt_for_file_name = false,
+						drag_and_drop = { insert_mode = true },
+					},
+				},
+				keys = {
+					{ "<leader>ip", "<cmd>PasteImage<cr>", desc = "Paste image from clipboard" },
+				},
+			},
 		},
 	},
 }

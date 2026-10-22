@@ -3,316 +3,129 @@ local BufferHistoryUtils = {}
 
 local buffer_entry = require("config.buf_switch_2.buffer_entries")
 
----@param self BufferHistory history 
----@return integer max_level Highest level in the current history
-function BufferHistoryUtils:get_max_level()
-	if #self.history == 0 then return 0 end
-
-	local max_level = 0
-	for _, entry in ipairs(self.history) do
-		assert(entry.level ~= nil)
-		if entry.level > max_level then
-			max_level = entry.level
-		end
-	end
-
-	if #self.history > 0 then assert(max_level > 0) end
-	return max_level
-end
-
----@param self BufferHistory
----@param target_input integer
----@return nil
-function BufferHistoryUtils:delete_at_target(target_input)
-
-	if #self.history == 0 then
-		vim.notify("No buffers left in history")
-		return
-	end
-
-	local target = #self.history - target_input + 1
-	local init_index = self.current_index
-
-	if #self.history < target or #self.history <= 1 or init_index == target then
-		return
-	end
-
-	table.remove(self.history, target)
-	self.utils.fix_levels(self)
-
-	if init_index < target then
-		self.current_index = self.current_index - 1
-	else
-		self.current_index = self.current_index
-	end
-
-	if self.current_index > #self.history then
-		self.current_index = #self.history
-		self.mover.go_to_index(self, 1)
-	elseif self.current_index < 1 then
-		self.current_index = 1
-		self.mover.go_to_index(self, #self.history)
-	else
-		self.mover.go_to_index(self, #self.history - self.current_index)
-	end
-
-	self.utils.update_ui(self)
-
-end
-
 ---@param self BufferHistory
 ---@param is_pinned? boolean
 ---@param filepath? string
 ---@param bufnr? integer
----@return BufferEntry? new_entry Only if it passed validation
+---@return BufferEntry? new_entry Not validated yet, use new_entry.validator.validate
 function BufferHistoryUtils:new_entry(is_pinned, filepath, bufnr)
-	return buffer_entry.new(self, {
-		is_pinned = is_pinned or false,
-		filepath = filepath or nil,
-		bufnr = bufnr or nil
+	return buffer_entry.new({
+		is_pinned = is_pinned,
+		filepath = filepath,
+		bufnr = bufnr,
 	})
 end
 
-local function reversedipairsiter(t, i)
-    i = i - 1
-    if i ~= 0 then
-        return i, t[i]
-    end
-end
-local function reversedipairs(t)
-    return reversedipairsiter, t, #t + 1
-end
-
-function BufferHistoryUtils:fix_levels()
-  -- 1. Collect unique existing levels
-  local unique_levels_set = {}
-  local unique_levels_list = {}
-
-  for _, entry in ipairs(self.history) do
-    if entry.level ~= nil and not unique_levels_set[entry.level] then
-      unique_levels_set[entry.level] = true
-      table.insert(unique_levels_list, entry.level)
-    end
-  end
-
-  -- Handle the case where there are no levels to fix
-  if #unique_levels_list == 0 then
-    -- vim.notify("No levels found in history to fix.", vim.log.levels.INFO)
-    return
-  end
-
-  -- 2. Sort the unique levels numerically
-  table.sort(unique_levels_list)
-
-  -- Optional: Notify about the sorted unique levels found
-  -- vim.notify("Sorted unique levels: " .. vim.inspect(unique_levels_list), vim.log.levels.DEBUG)
-
-  -- 3. Create the mapping from old level to new consecutive level
-  local level_map = {}
-  for i, old_level in ipairs(unique_levels_list) do
-    level_map[old_level] = i -- Assign new level based on sorted order (1, 2, 3...)
-  end
-
-  -- Optional: Notify about the created level map
-  -- vim.notify("Level map created: " .. vim.inspect(level_map), vim.log.levels.DEBUG)
-
-  -- 4. Update the history entries with the new levels
-  for _, entry in ipairs(self.history) do
-    if entry.level ~= nil then
-      local new_level = level_map[entry.level]
-      if new_level ~= nil then
-        entry.level = new_level
-      else
-        -- This case should ideally not happen if logic is correct,
-        -- but good for robustness/debugging.
-        vim.notify(
-          "Warning: Could not find mapping for level " .. tostring(entry.level),
-          vim.log.levels.WARN
-        )
-      end
-    end
-  end
-end
-
+---Finds the entries matching any of filepath, bufnr or index
 ---@param self BufferHistory
----@return nil
-function BufferHistoryUtils:update_ui()
-	-- We add a list of all entries to vim.o.winbar
-	-- Format the string as such
-	-- If buffer ~= self.current_index then
-	-- [ 1 ] [ 2 ] [ 3 ] etc..
-	-- If buffer == self.current_index then
-	-- [ filename ]
-	-- Expected:
-	-- [ 1 ] [ 2 ] [ 3 ] [ filename ] [ 5 ] [ 6 ] ..
+---@param filepath? string
+---@param bufnr? integer
+---@param index? integer
+---@param exclude_pinned? boolean never match pinned entries
+---@return integer[]? idxs ascending indices of the matches, nil if none
+function BufferHistoryUtils:get_matching_entry_idx(filepath, bufnr, index, exclude_pinned)
+	local inds = {}
 
-	local bufnr = vim.api.nvim_get_current_buf()
-	local winbar = ""
-	local max_level = self.utils.get_max_level(self)
-
-	-- Loop backwards
-	for i, entry in reversedipairs(self.history) do
-		local filepath = entry.filepath
-		if filepath == nil then
-			filepath = vim.api.nvim_buf_get_name(bufnr)
+	for idx, entry in ipairs(self.history) do
+		local skip = exclude_pinned and entry.is_pinned
+		local matches = idx == index
+			or (filepath ~= nil and entry.filepath == filepath)
+			or (bufnr ~= nil and entry.bufnr == bufnr)
+		if matches and not skip then
+			table.insert(inds, idx)
 		end
-		if filepath == "" then
-			filepath = "[No Name]"
-		end
-
-		-- If oil buffer show Oil
-		if filepath:find("oil://") then
-			filepath = "Oil"
-		end
-
-		-- If file is not a file then show the buffer name
-		if filepath:find("No Name") then
-			filepath = vim.api.nvim_buf_get_name(bufnr)
-		end
-
-		-- Find last / and remove everything before it
-		local last_slash = filepath:match(".*()/")
-		local filename = filepath
-		if last_slash then
-			filename = filepath:sub(last_slash + 1)
-		end
-
-		if entry.level == self.current_index and entry.filepath == vim.api.nvim_buf_get_name(bufnr) then
-			-- when selected:
-			local label = string.format(" %d: %s ", max_level - entry.level + 1, filename)
-			winbar = winbar
-			.. "%#WinbarSel#" .. " " .. label .. " " .. "%* "
-		else
-			if #self.history > 7 then
-				winbar = winbar
-				.. " "
-				.. "%#WinbarDim#" .. string.format("[%d]", max_level - entry.level + 1) .. "%*"
-				.. " "
-			else
-				winbar = winbar
-				.. " "
-				.. "%#WinbarDim#" .. string.format("%d: %s", max_level - entry.level + 1, filename) .. "%*"
-				.. " "
-			end
-		end
-
 	end
 
-	vim.o.winbar = winbar
+	return #inds > 0 and inds or nil
 end
 
 ---@param self BufferHistory
 ---@param entry BufferEntry
 ---@return nil
 function BufferHistoryUtils:append(entry)
-
-	-- Check if dup in self.history
-	local idx_matches = self.utils.get_matching_entry_idx(self, entry.filepath, entry.bufnr, nil, false)
-	if idx_matches ~= nil then
-		for _, idx in ipairs(idx_matches) do
-			table.remove(self.history, idx)
-		end
-	end
-
+	self.utils.remove(self, entry.filepath, entry.bufnr) -- no duplicates
 	table.insert(self.history, entry)
 	self.current_index = #self.history
 end
 
+---Removes the entries matching any of filepath, bufnr or index
 ---@param self BufferHistory
 ---@param filepath? string
 ---@param bufnr? integer
 ---@param index? integer
----@param exculde_pinned? boolean exculde pinned entrys from removal
-function BufferHistoryUtils:remove(filepath, bufnr, index, exculde_pinned)
-	local inds = self.utils.get_matching_entry_idx(self, filepath, bufnr, index, exculde_pinned)
+---@param exclude_pinned? boolean keep pinned entries
+function BufferHistoryUtils:remove(filepath, bufnr, index, exclude_pinned)
+	local inds = self.utils.get_matching_entry_idx(self, filepath, bufnr, index, exclude_pinned)
 
 	if not inds then
 		return
 	end
 
-	for i in ipairs(inds) do
-		table.remove(self.history, i)
-		if i < self.current_index and self.current_index > 0 then -- This should fix the -1 index bug
+	-- Remove from the back so each removal leaves the remaining indices in place
+	for k = #inds, 1, -1 do
+		table.remove(self.history, inds[k])
+		if inds[k] < self.current_index then
 			self.current_index = self.current_index - 1
 		end
 	end
-
-	assert(self.current_index >= 0)
+	self.current_index = math.min(self.current_index, #self.history)
 end
 
-
----Function that finds all maching ids of buffer entries
+---Removes the entry shown as `number` in the bar (1 = most recent), staying on the current buffer
 ---@param self BufferHistory
----@param filepath? string
----@param bufnr? integer
----@param index? integer
----@param exculde_pinned? boolean
----@return integer[]? idx of matching entries or nil if none found
-function BufferHistoryUtils:get_matching_entry_idx(filepath, bufnr, index, exculde_pinned)
-
-	-- A bit annoying boolean logic but heres a description...
-	-- exculde_pinned is true then
-	-- if not entry.exculde_pinned then  -> (~exculde_pinned | ~entry.is_pinned) true if is_pinned is false
-	--
-	-- exculde_pinned is false then -> (~exculde_pinned | ~entry.is_pinned) always true
-	-- doesnt matter always true
-
-	local inds = {}
-	exculde_pinned = exculde_pinned or false
-
-	for idx, entry in ipairs(self.history) do
-		if (not exculde_pinned) or (not entry.is_pinned) then
-			if exculde_pinned then
-				vim.notify"not pinned error"
-				assert(not entry.is_pinned)
-			end
-			if idx == index then
-				table.insert(inds, idx)
-				goto continue
-			end
-			if filepath == entry.filepath then
-				table.insert(inds, idx)
-				goto continue
-			end
-			if bufnr == entry.bufnr then
-				table.insert(inds, idx)
-				goto continue
-			end
-			::continue::
-		end
+---@param number integer
+---@return nil
+function BufferHistoryUtils:delete_at_target(number)
+	if #self.history == 0 then
+		vim.notify("No buffers left in history")
+		return
 	end
 
-	assert(#inds >= 0)
-	assert(#inds <= #self.history)
-	if #inds > 0 then
-		return inds
-	else
-		return nil
+	local target = #self.history - number + 1
+	if target < 1 or #self.history <= 1 or target == self.current_index then
+		return
 	end
+
+	table.remove(self.history, target)
+
+	-- The current entry only shifts down when an older one went
+	if target < self.current_index then
+		self.current_index = self.current_index - 1
+	end
+end
+
+---Removes the current entry and opens its older (or newer) neighbour
+---@param self BufferHistory
+---@param toward_newer boolean
+---@return nil
+function BufferHistoryUtils:remove_current(toward_newer)
+	if #self.history <= 1 then
+		return
+	end
+
+	local removed = self.current_index
+	table.remove(self.history, removed)
+
+	-- The newer neighbour slides into the removed slot, the older one sits just before it
+	local target = toward_newer and removed or removed - 1
+	self.current_index = math.max(1, math.min(target, #self.history))
+	self.mover.open(self, self.current_index)
 end
 
 ---@param self BufferHistory
 ---@return nil
-function BufferHistoryUtils:clear ()
+function BufferHistoryUtils:clear()
 	self.history = {}
 	self.current_index = 0
-	self.on_attach.on_attach(self) -- reattach the buffer
-	vim.notify"Cleared buffer history"
-end
-
----@param self BufferHistory
----@return nil
-function BufferHistoryUtils:reset ()
-	self.history = {}
-	self.current_index = 0
-	vim.notify"Reset buffer history"
+	self.on_attach.on_attach(self) -- start again from the current buffer
+	vim.notify("Cleared buffer history")
 end
 
 ---@param self BufferHistory
 ---@return nil
 function BufferHistoryUtils:toggle_pause()
 	if not self.paused and #self.history == 0 then
-		vim.notify"Warn: your buffer history is empty"
+		vim.notify("Warn: your buffer history is empty")
 	end
 
 	self.paused = not self.paused

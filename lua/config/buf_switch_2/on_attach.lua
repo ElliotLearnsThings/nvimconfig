@@ -1,94 +1,52 @@
+local buffer_entry = require("config.buf_switch_2.buffer_entries")
+
 ---@class BufferHistoryOnAttachHandler
 local OnAttachHandler = {}
 
+---Handles entering a buffer: moves the pointer to it if it is already in the history,
+---otherwise appends it (unless paused, or the buffer is not allowed)
 ---@param self BufferHistory
----@param bypass? boolean
----@return boolean is_success true if successful on_attach
+---@param bypass? boolean record even while paused or right after our own move
+---@return boolean is_success true if the buffer was appended
 function OnAttachHandler:on_attach(bypass)
-	-- This is the function that handles entering a new file - maybe the most important of all
-	--
-	-- Structure
-	--
-	-- 1. Validate inputs by creating the new entry object
-	-- Get the new bufnr and then the filepath, then create and validate the entry
-	--
-	-- 2. Validate against dups using validate_relative
-	--
-	-- 3. If all good, append it
-	--
-	-- 4. TODO Future logic for pruning
+	local bufnr = vim.api.nvim_get_current_buf()
+	local filepath = buffer_entry.get_filepath(bufnr)
+	local matches = self.utils.get_matching_entry_idx(self, filepath, bufnr)
 
-
-	if self.is_viewing and not bypass then
-		if self.debug then vim.print("[on_attach] left due to viewing") end
-		self.is_viewing = false
-		return false
-	end
-
-	if self.paused and not bypass then
-
-		-- This bit of logic just makes sure that when we are on paused mode, and we
-		-- enter a file that is already inside our tree, then when we tab around,
-		-- the plugin recognises that this item is in the tree and sets the pointer to the
-		-- appropriate buffer.
-
-		if self.debug then vim.print("[on_attach] left due to paused") end
-		-- Check if buffer number is in current history
-		local new_entry_unsafe = self.utils.new_entry(self) -- Warning - no checks or validation here
-
-		if new_entry_unsafe == nil then -- If we can't find it just assume bad buffer and its not connetained
-			self.is_outside = true
+	if not bypass then
+		if self.is_viewing then
+			-- This BufEnter came from our own move, which already set the pointer
+			if self.debug then vim.print("[on_attach] left due to viewing") end
+			self.is_viewing = false
 			return false
 		end
 
-		local idx_matches = self.validator.contains(self, new_entry_unsafe, false)
-		if idx_matches ~= nil then -- If we find it, then we are not outside
-			self.current_index = idx_matches[#idx_matches]
-			self.is_outside = false
+		if self.paused then
+			-- Not recording, but when we enter a buffer that is already in the history the
+			-- pointer follows it, so moving around afterwards starts from the right place
+			if self.debug then vim.print("[on_attach] left due to paused") end
+			self.is_outside = matches == nil
+			if matches then
+				self.current_index = matches[#matches]
+			end
 			return false
 		end
+	end
 
-		self.is_outside = true
-
+	if matches then
+		self.current_index = matches[#matches]
+		self.is_outside = false
 		return false
 	end
 
-	if self.debug and bypass then vim.notify"Bypassing block paused and viewing" end
-	if self.debug then vim.print("[on_attach] entered buffer with number: " .. vim.api.nvim_get_current_buf()) end
-
-	local new_bufnr = vim.api.nvim_get_current_buf()
-	local new_filepath = Get_filepath_from_bufnr(new_bufnr)
-	local new_is_pinned = false -- default
-
-	local contains_matching = self.utils.get_matching_entry_idx(self, new_filepath, new_bufnr, nil, false)
-	if contains_matching ~= nil then
-		local index = contains_matching[#contains_matching]
-		local old_entry = self.history[index]
-		self.current_index = old_entry.level
-		return false
-	end
-
-	local new_entry = self.utils.new_entry(self, new_is_pinned, new_filepath, new_bufnr)
-
-	if new_entry == nil then
-		if self.debug then vim.print("Invalid buffer, skipping...") end
-		return false
-	end
-
-	local is_valid = new_entry.validator.validate(new_entry, self)
-	local is_valid_rel = new_entry.validator.validate_relative(new_entry, self)
-
-	-- Debug output
-	if not is_valid or not is_valid_rel then
-		if self.debug then vim.print("[on_attach] new buffer with number " .. new_bufnr .. " and filepath: " .. new_filepath .. " is not valid") end
-		if not is_valid and self.debug then vim.print("not valid") end
-		if not is_valid_rel and self.debug then vim.print("not valid_rel") end
+	local new_entry = self.utils.new_entry(self, false, filepath, bufnr)
+	if new_entry == nil or not new_entry.validator.validate(new_entry, self) then
+		if self.debug then vim.print("[on_attach] not recording buffer " .. bufnr) end
 		return false
 	end
 
 	self.utils.append(self, new_entry)
-	self.validator.validate(self)
-
+	self.is_outside = false
 	return true
 end
 

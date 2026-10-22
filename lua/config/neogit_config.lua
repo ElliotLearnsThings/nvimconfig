@@ -1,6 +1,23 @@
+local diffview_actions = require("diffview.actions")
+
+-- diffview maps <leader>e and <leader>b buffer-locally with `nowait`, so inside the
+-- diff view they fire the moment they match and swallow the global <leader>e…
+-- (diagnostics) and <leader>bb (buffer history) maps. Move them under <leader>g.
+local diffview_panel_keymaps = {
+	{ "n", "<leader>e", false },
+	{ "n", "<leader>b", false },
+	{ "n", "<leader>gf", diffview_actions.focus_files, { desc = "Bring focus to the file panel" } },
+	{ "n", "<leader>gt", diffview_actions.toggle_files, { desc = "Toggle the file panel" } },
+}
+
 require("diffview").setup({
 	default_args = {
 		DiffviewOpen = { "--split=horizontal" },  -- This would make DiffView split horizontally
+	},
+	keymaps = {
+		view = diffview_panel_keymaps,
+		file_panel = diffview_panel_keymaps,
+		file_history_panel = diffview_panel_keymaps,
 	},
 	-- Other DiffView configuration options...
 })

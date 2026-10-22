@@ -1,4 +1,5 @@
 require("config.lazy")
+require("config.crash_recovery")
 require("config.undotree_config")
 require("config.neogit_config")
 require("config.git_signs_config")
@@ -9,9 +10,10 @@ require("config.none_ls_config")
 require("config.window_config")
 require("config.oil_config")
 require("config.marker_config")
-require("config.buf_switch_2")
+-- require("config.buf_switch_2") -- replaced by bufswitch.nvim, see lua/plugins/bufswitch_local.lua
 require("config.toggleterm_config")
 require("config.dap_config")
+require("config.avante_toggle")
 
 vim.opt.clipboard:append { 'unnamedplus' }
 vim.opt.relativenumber = true
@@ -19,7 +21,7 @@ vim.opt.number = true
 vim.opt.numberwidth = 2
 vim.opt.signcolumn = "yes"
 vim.opt.linespace = 10
-vim.opt.scrolloff = 40
+vim.opt.scrolloff = 20
 vim.opt.cursorline = true
 vim.opt.inccommand = 'split'
 vim.opt.timeoutlen = 300
@@ -53,13 +55,14 @@ vim.api.nvim_set_hl(0, 'LineNrBelow', { fg='#dDbe60', bold=true })
 
 -- Toggle diagnostic visibility
 vim.keymap.set('n', '<leader>td', function()
-	local diagnostics_visible = vim.diagnostic.is_disabled()
-	if diagnostics_visible then
-		vim.diagnostic.enable()
-		vim.notify("Diagnostics enabled", vim.log.levels.INFO)
-	else
-		vim.diagnostic.disable()
-		vim.notify("Diagnostics disabled", vim.log.levels.INFO)
-	end
+	local enable = not vim.diagnostic.is_enabled()
+	vim.diagnostic.enable(enable)
+	vim.notify(enable and "Diagnostics enabled" or "Diagnostics disabled", vim.log.levels.INFO)
 end, { desc = "Toggle diagnostic visibility" })
+
+-- Toggle spell checking in the current window
+vim.keymap.set('n', '<leader>ts', function()
+	vim.wo.spell = not vim.wo.spell
+	vim.notify(vim.wo.spell and ("Spell check enabled (" .. vim.bo.spelllang .. ")") or "Spell check disabled", vim.log.levels.INFO)
+end, { desc = "Toggle spell check" })
 
