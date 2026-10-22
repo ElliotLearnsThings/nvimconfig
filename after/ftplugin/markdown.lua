@@ -64,3 +64,60 @@ map("n", "<leader>mx", function()
 	end
 	vim.api.nvim_set_current_line(new)
 end, "Markdown: toggle checkbox")
+
+-- ]d / [d: jump to the next/previous misspelled word and list suggestions in a
+-- float. j/k move, <CR> replaces the word, q/<Esc> closes. Overrides the global
+-- diagnostic maps here, since spelling is what matters in notes.
+local function spell_suggest()
+	local bad = vim.fn.spellbadword()
+	local word = bad[1]
+	if word == "" then
+		return vim.notify("No misspelled word", vim.log.levels.INFO)
+	end
+	local suggestions = vim.fn.spellsuggest(word, 10)
+	if #suggestions == 0 then
+		return vim.notify("No suggestions for '" .. word .. "'", vim.log.levels.INFO)
+	end
+
+	local target = vim.api.nvim_get_current_buf()
+	local pos = vim.api.nvim_win_get_cursor(0)
+	local row, col = pos[1] - 1, pos[2]
+
+	local buf = vim.api.nvim_create_buf(false, true)
+	vim.api.nvim_buf_set_lines(buf, 0, -1, false, suggestions)
+	vim.bo[buf].modifiable = false
+	vim.bo[buf].bufhidden = "wipe"
+
+	local width = #word + 2
+	for _, s in ipairs(suggestions) do
+		width = math.max(width, vim.fn.strdisplaywidth(s))
+	end
+	local win = vim.api.nvim_open_win(buf, true, {
+		relative = "cursor", row = 1, col = 0,
+		width = width, height = #suggestions,
+		style = "minimal", border = "rounded",
+		title = " " .. word .. " ", title_pos = "center",
+	})
+	vim.wo[win].cursorline = true
+
+	local function close()
+		if vim.api.nvim_win_is_valid(win) then
+			vim.api.nvim_win_close(win, true)
+		end
+	end
+	local function accept()
+		local choice = suggestions[vim.api.nvim_win_get_cursor(win)[1]]
+		close()
+		vim.api.nvim_buf_set_text(target, row, col, row, col + #word, { choice })
+		vim.api.nvim_win_set_cursor(0, { row + 1, col })
+	end
+
+	local o = { buffer = buf, nowait = true, silent = true }
+	vim.keymap.set("n", "<CR>", accept, o)
+	vim.keymap.set("n", "q", close, o)
+	vim.keymap.set("n", "<Esc>", close, o)
+	vim.api.nvim_create_autocmd("WinLeave", { buffer = buf, once = true, callback = close })
+end
+
+map("n", "]d", function() vim.cmd("normal! ]s") spell_suggest() end, "Spell: next misspelling + suggestions")
+map("n", "[d", function() vim.cmd("normal! [s") spell_suggest() end, "Spell: previous misspelling + suggestions")
